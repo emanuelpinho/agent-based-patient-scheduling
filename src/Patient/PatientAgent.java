@@ -1,11 +1,9 @@
 package patient;
 
 import jade.core.Agent;
-import sun.jvm.hotspot.debugger.cdbg.Sym;
 import symptons.Symptom;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 /**
  * Created by Emanuelpinho on 18/11/14.
@@ -19,7 +17,7 @@ public class PatientAgent extends Agent {
     private ArrayList<Symptom> symptons;
 
     /**
-     * Name of Patient to be easy to find him
+     * Name of patient to be easy to find him
      */
     private String name;
 
@@ -29,7 +27,7 @@ public class PatientAgent extends Agent {
     private String lastExam;
 
     /**
-     * Health of patient, follow the formula: h(t)= s-bt, where, t is time in Hospital, s is inicial health state
+     * Health of patient, follow the formula: h(t)= s-bt, where, t is time in hospital, s is inicial health state
      * and b is a decrease health state.
      */
     private float healthState;

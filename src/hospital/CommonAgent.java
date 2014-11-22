@@ -13,7 +13,7 @@ import java.util.ArrayList;
 public class CommonAgent extends Agent {
 
     /**
-     * Patient to do triage consultation
+     * patient to do triage consultation
      */
     private PatientAgent patient;
 
@@ -32,12 +32,12 @@ public class CommonAgent extends Agent {
             done = false;
 
             String lastExam  = patient.getLastExam();
-            ArrayList<Symptom> symptons = patient.getSymptons();
+            ArrayList<Symptom> symptoms = patient.getSymptons();
 
-            if (symptons == null) {
+            if (symptoms == null) {
                 // Treatment is over
             }
-            else if (lastExam == null && symptons.isEmpty()) {
+            else if (lastExam == null && symptoms.isEmpty()) {
                 triageConsultation();
             }
             else {
@@ -53,11 +53,11 @@ public class CommonAgent extends Agent {
         }
 
         /**
-         * Initial healt state "s" is equals to 1 - symptons ( fever 0.25, mulligrubs 0.1, back pain 0.15,
+         * Initial health state "s" is equals to 1 - symptoms ( fever 0.25, mulligrubs 0.1, back pain 0.15,
          * heart palpitations 0.35, muscle aches 0.05, instestinal pain 0.2 )
-         * Decrease Rate "b" is equals to 1 - symptons (  fever 0.6, mulligrubs 0.3, back pain 0.3,
+         * Decrease Rate "b" is equals to 1 - symptoms (  fever 0.6, mulligrubs 0.3, back pain 0.3,
          * heart palpitations 0.6, muscle aches 0.2, instestinal pain 0.4 )
-         * Exams that patient has to do are equals to the symptons list in same order to the symptons list
+         * Exams that patient has to do are equals to the symptoms list in same order to the symptoms list
          */
         public void triageConsultation(){
             patient.setHealthState();

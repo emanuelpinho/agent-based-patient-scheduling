@@ -52,7 +52,7 @@ public class Symptom {
         return exam;
     }
 
-    public double getDecreseRate() {
+    public double getDecreaseRate() {
         return decreseRate;
     }
 
