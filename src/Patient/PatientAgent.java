@@ -1,6 +1,9 @@
 package patient;
 
+import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.SimpleBehaviour;
+import jade.lang.acl.ACLMessage;
 import symptons.Symptom;
 
 import java.util.ArrayList;
@@ -81,7 +84,7 @@ public class PatientAgent extends Agent {
 
         for(Symptom symptom : symptons){
             s += symptom.getHealth();
-            b += symptom.getDecreseRate();
+            b += symptom.getDecreaseRate();
         }
 
         this.decreaseRate = b;
@@ -104,5 +107,33 @@ public class PatientAgent extends Agent {
         }
 
         return false;
+    }
+
+    protected void setup()
+    {
+        System.out.println("patient start");
+        addBehaviour(new SendMessage());
+    }
+
+    public class SendMessage extends SimpleBehaviour {
+
+        private Boolean done;
+
+        @Override
+        public void action() {
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.setContent( "Ping" );
+            for (int i = 1; i<=2; i++)
+                msg.addReceiver( new AID( "a" + i, AID.ISLOCALNAME) );
+
+            send(msg);
+
+            block();
+        }
+
+        @Override
+        public boolean done() {
+            return false;
+        }
     }
 }

@@ -2,6 +2,7 @@ package hospital;
 
 import jade.core.Agent;
 import jade.core.behaviours.SimpleBehaviour;
+import jade.lang.acl.ACLMessage;
 import patient.PatientAgent;
 import symptons.Symptom;
 
@@ -22,6 +23,11 @@ public class CommonAgent extends Agent {
      */
     private Boolean free;
 
+    protected void setup()
+    {
+        addBehaviour(new Triage());
+    }
+
 
     public class Triage extends SimpleBehaviour {
 
@@ -29,6 +35,23 @@ public class CommonAgent extends Agent {
 
         @Override
         public void action() {
+            System.out.println("teste");
+
+
+            done = false;
+
+            while(true){
+                ACLMessage msg = receive();
+
+                if(msg != null) {
+                    System.out.println("message: " + msg.toString());
+                    block();
+                }
+            }
+
+            //block(); // block doesn't stop execution, it just schedules the next execution
+
+            /*
             done = false;
 
             String lastExam  = patient.getLastExam();
@@ -45,6 +68,8 @@ public class CommonAgent extends Agent {
             }
 
             done = true;
+
+            */
         }
 
         @Override
