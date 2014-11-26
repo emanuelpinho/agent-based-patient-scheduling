@@ -1,6 +1,7 @@
 package hospital;
 
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
 import patient.PatientAgent;
@@ -23,9 +24,19 @@ public class CommonAgent extends Agent {
      */
     private Boolean free;
 
+    private ACLMessage msg;
+
     protected void setup()
     {
-        addBehaviour(new Triage());
+        addBehaviour(new CyclicBehaviour(this) {
+            public void action() {
+                System.out.println("Agent: " + myAgent.getLocalName());
+                msg = receive();
+                if (msg!=null)
+                    System.out.println( " - " + myAgent.getLocalName() + " <- " + msg.getContent() );
+                block(99999999);
+            }
+        });
     }
 
 
@@ -35,19 +46,6 @@ public class CommonAgent extends Agent {
 
         @Override
         public void action() {
-            System.out.println("teste");
-
-
-            done = false;
-
-            while(true){
-                ACLMessage msg = receive();
-
-                if(msg != null) {
-                    System.out.println("message: " + msg.toString());
-                    block();
-                }
-            }
 
             //block(); // block doesn't stop execution, it just schedules the next execution
 

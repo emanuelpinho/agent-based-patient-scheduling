@@ -123,8 +123,8 @@ public class PatientAgent extends Agent {
         public void action() {
             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
             msg.setContent( "Ping" );
-            for (int i = 1; i<=2; i++)
-                msg.addReceiver( new AID( "a" + i, AID.ISLOCALNAME) );
+
+            msg.addReceiver(new AID("Common", AID.ISLOCALNAME));
 
             send(msg);
 
