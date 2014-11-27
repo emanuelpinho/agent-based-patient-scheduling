@@ -9,6 +9,8 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.util.Logger;
+import jade.wrapper.AgentContainer;
+import jade.wrapper.AgentController;
 import patient.PatientAgent;
 import symptons.Symptom;
 
@@ -24,50 +26,68 @@ public class CommonAgent extends Agent {
      */
     private PatientAgent patient;
 
-    /**
-     * Define if Agent is available
-     */
-    private Boolean free;
-
-    private ACLMessage msg;
-
-    private Logger myLogger = Logger.getMyLogger(getClass().getName());
-
     protected void setup()
     {
+        patient = new PatientAgent();
+        ServiceDescription sd  = new ServiceDescription();
+        sd.setType( "Common" );
+        sd.setName( getLocalName() );
+        register(sd);
 
+        String name = "patient";
+
+        AgentContainer c = getContainerController();
+
+        try{
+            AgentController a = c.acceptNewAgent("paciente", patient);
+            a.start();
+        }
+        catch( Exception e ){
+            System.out.println(e.getCause());
+        }
+
+        addBehaviour(new WaiForMessage(this));
+    }
+
+    void register(ServiceDescription sd)
+    {
         DFAgentDescription dfd = new DFAgentDescription();
-        ServiceDescription sd = new ServiceDescription();
-        sd.setType("Common");
-        sd.setName(getName());
-        //sd.setOwnership("TILAB");
         dfd.setName(getAID());
         dfd.addServices(sd);
         try {
-            DFService.register(this, dfd);
-            addBehaviour(new Triage(this));
-
-        } catch (FIPAException e) {
-            myLogger.log(Logger.SEVERE, "Agent " + getLocalName()+" - Cannot register with DF", e);
+            DFService.register(this, dfd );
+        }
+        catch (FIPAException fe) {
+            fe.printStackTrace();
             doDelete();
         }
     }
 
+    protected void takeDown()
+    {
+        try {
+            DFService.deregister(this);
+        }
+        catch (Exception e) {
+            System.out.println(e.getCause());
+        }
+    }
 
-    public class Triage extends CyclicBehaviour {
 
-        private Boolean done;
+    public class WaiForMessage extends CyclicBehaviour {
 
-        public Triage(Agent a){
+        public WaiForMessage(Agent a){
             super(a);
         }
 
         @Override
         public void action() {
             System.out.println("Agent: " + myAgent.getLocalName());
-            msg = receive();
-            if (msg!=null)
-                System.out.println(" - " + myAgent.getLocalName() + " <- " + msg.getContent());
+            ACLMessage msg = receive();
+            if (msg!=null) {
+                System.out.println("Message received in : " + myAgent.getLocalName() + " -> " + msg.getContent()
+                        + " from " + msg.getSender().getLocalName());
+            }
             else
                 block();
         }

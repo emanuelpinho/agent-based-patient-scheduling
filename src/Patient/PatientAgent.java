@@ -58,11 +58,6 @@ public class PatientAgent extends Agent {
     private long enterTime;
 
 
-    private Logger myLogger = Logger.getMyLogger(getClass().getName());
-
-
-
-
     /************************************ Constructors ************************************/
 
     public PatientAgent(ArrayList<String> symptons, String name){
@@ -125,23 +120,41 @@ public class PatientAgent extends Agent {
 
     /************************************ OVERRIDE FUNCTIONS ************************************/
 
+
     protected void setup()
     {
+        System.out.println("Patient start");
+        ServiceDescription sd  = new ServiceDescription();
+        sd.setType( "Patient" );
+        sd.setName( getLocalName() );
+        register(sd);
+    }
+
+    void register(ServiceDescription sd)
+    {
         DFAgentDescription dfd = new DFAgentDescription();
-        ServiceDescription sd = new ServiceDescription();
-        sd.setType("Patient");
-        sd.setName(getName());
-        //sd.setOwnership("TILAB");
         dfd.setName(getAID());
         dfd.addServices(sd);
         try {
-            DFService.register(this, dfd);
+            DFService.register(this, dfd );
+
+            System.out.println("Patient agent send Message");
             addBehaviour(new SendMessage());
-        } catch (FIPAException e) {
-            myLogger.log(Logger.SEVERE, "Agent " + getLocalName()+" - Cannot register with DF", e);
+        }
+        catch (FIPAException fe) {
+            fe.printStackTrace();
             doDelete();
         }
+    }
 
+    protected void takeDown()
+    {
+        try {
+            DFService.deregister(this);
+        }
+        catch (Exception e) {
+            System.out.println(e.getCause());
+        }
     }
 
     public class SendMessage extends SimpleBehaviour {
@@ -155,6 +168,8 @@ public class PatientAgent extends Agent {
         @Override
         public void action() {
 
+            System.out.println("Init Send behavior action");
+
             AMSAgentDescription[] agents = null;
             try {
                 SearchConstraints c = new SearchConstraints();
@@ -166,7 +181,7 @@ public class PatientAgent extends Agent {
                 e.printStackTrace();
             }
             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-            msg.setContent( "Ping" );
+            msg.setContent("Ping");
 
             for (int i=0; i<agents.length;i++) {
                 System.out.println("Agent: " + agents[i].getName());
@@ -174,12 +189,6 @@ public class PatientAgent extends Agent {
             }
 
             send(msg);
-
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
             done = true;
         }

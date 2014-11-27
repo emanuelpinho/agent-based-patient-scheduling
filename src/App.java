@@ -1,3 +1,4 @@
+import hospital.CommonAgent;
 import jade.Boot;
 
 /**
@@ -10,8 +11,7 @@ public class App {
         String[] param = new String[1];
         param[0] = "-gui";
         Boot.main(param);
-
-
     }
+
 
 }
