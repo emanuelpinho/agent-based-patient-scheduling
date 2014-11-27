@@ -2,15 +2,22 @@ package patient;
 
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
+import jade.domain.AMSService;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.AMSAgentDescription;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.SearchConstraints;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import jade.util.Logger;
 import symptons.Symptom;
 
 import java.util.ArrayList;
 
-/**
- * Created by Emanuelpinho on 18/11/14.
- */
+
 public class PatientAgent extends Agent {
 
     /**
@@ -51,6 +58,9 @@ public class PatientAgent extends Agent {
     private long enterTime;
 
 
+    private Logger myLogger = Logger.getMyLogger(getClass().getName());
+
+
 
 
     /************************************ Constructors ************************************/
@@ -63,6 +73,10 @@ public class PatientAgent extends Agent {
 
         this.name = name;
         this.enterTime = System.currentTimeMillis();
+    }
+
+    public PatientAgent(){
+
     }
 
 
@@ -109,31 +123,78 @@ public class PatientAgent extends Agent {
         return false;
     }
 
+    /************************************ OVERRIDE FUNCTIONS ************************************/
+
     protected void setup()
     {
-        System.out.println("patient start");
-        addBehaviour(new SendMessage());
+        DFAgentDescription dfd = new DFAgentDescription();
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("Patient");
+        sd.setName(getName());
+        //sd.setOwnership("TILAB");
+        dfd.setName(getAID());
+        dfd.addServices(sd);
+        try {
+            DFService.register(this, dfd);
+            addBehaviour(new SendMessage());
+        } catch (FIPAException e) {
+            myLogger.log(Logger.SEVERE, "Agent " + getLocalName()+" - Cannot register with DF", e);
+            doDelete();
+        }
+
     }
 
     public class SendMessage extends SimpleBehaviour {
 
         private Boolean done;
 
+        public SendMessage(){
+            super();
+        }
+
         @Override
         public void action() {
+
+            AMSAgentDescription[] agents = null;
+            try {
+                SearchConstraints c = new SearchConstraints();
+                c.setMaxResults (new Long(-1));
+                agents = AMSService.search(myAgent, new AMSAgentDescription(), c);
+            }
+            catch (Exception e) {
+                System.out.println( "Problem searching AMS: " + e );
+                e.printStackTrace();
+            }
             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
             msg.setContent( "Ping" );
 
-            msg.addReceiver(new AID("Common", AID.ISLOCALNAME));
+            for (int i=0; i<agents.length;i++) {
+                System.out.println("Agent: " + agents[i].getName());
+                msg.addReceiver(agents[i].getName());
+            }
 
             send(msg);
 
-            block();
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            done = true;
         }
 
         @Override
         public boolean done() {
-            return false;
+            return done;
+        }
+
+        @Override
+        public int onEnd() {
+            takeDown();
+            myAgent.doDelete();
+            return super.onEnd();
         }
     }
+
 }

@@ -3,7 +3,12 @@ package hospital;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import jade.util.Logger;
 import patient.PatientAgent;
 import symptons.Symptom;
 
@@ -26,53 +31,45 @@ public class CommonAgent extends Agent {
 
     private ACLMessage msg;
 
+    private Logger myLogger = Logger.getMyLogger(getClass().getName());
+
     protected void setup()
     {
-        addBehaviour(new CyclicBehaviour(this) {
-            public void action() {
-                System.out.println("Agent: " + myAgent.getLocalName());
-                msg = receive();
-                if (msg!=null)
-                    System.out.println( " - " + myAgent.getLocalName() + " <- " + msg.getContent() );
-                block(99999999);
-            }
-        });
+
+        DFAgentDescription dfd = new DFAgentDescription();
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("Common");
+        sd.setName(getName());
+        //sd.setOwnership("TILAB");
+        dfd.setName(getAID());
+        dfd.addServices(sd);
+        try {
+            DFService.register(this, dfd);
+            addBehaviour(new Triage(this));
+
+        } catch (FIPAException e) {
+            myLogger.log(Logger.SEVERE, "Agent " + getLocalName()+" - Cannot register with DF", e);
+            doDelete();
+        }
     }
 
 
-    public class Triage extends SimpleBehaviour {
+    public class Triage extends CyclicBehaviour {
 
         private Boolean done;
 
-        @Override
-        public void action() {
-
-            //block(); // block doesn't stop execution, it just schedules the next execution
-
-            /*
-            done = false;
-
-            String lastExam  = patient.getLastExam();
-            ArrayList<Symptom> symptoms = patient.getSymptons();
-
-            if (symptoms == null) {
-                // Treatment is over
-            }
-            else if (lastExam == null && symptoms.isEmpty()) {
-                triageConsultation();
-            }
-            else {
-                updateHealthState();
-            }
-
-            done = true;
-
-            */
+        public Triage(Agent a){
+            super(a);
         }
 
         @Override
-        public boolean done() {
-            return done;
+        public void action() {
+            System.out.println("Agent: " + myAgent.getLocalName());
+            msg = receive();
+            if (msg!=null)
+                System.out.println(" - " + myAgent.getLocalName() + " <- " + msg.getContent());
+            else
+                block();
         }
 
         /**
