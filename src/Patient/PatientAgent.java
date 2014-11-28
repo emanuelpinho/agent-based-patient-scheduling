@@ -16,6 +16,7 @@ import jade.util.Logger;
 import symptons.Symptom;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
 
 public class PatientAgent extends Agent {
@@ -59,7 +60,7 @@ public class PatientAgent extends Agent {
 
 
     /************************************ Constructors ************************************/
-
+/*
     public PatientAgent(ArrayList<String> symptons, String name){
 
         for(String symptom : symptons) {
@@ -69,9 +70,16 @@ public class PatientAgent extends Agent {
         this.name = name;
         this.enterTime = System.currentTimeMillis();
     }
+*/
+    public PatientAgent(ArrayList<String> symptoms, String name){
 
-    public PatientAgent(){
+        this.name = name;
 
+        for(String symptom : symptoms){
+            this.symptons.add(new Symptom(symptom));
+        }
+
+        this.enterTime = System.currentTimeMillis();
     }
 
 
@@ -123,11 +131,16 @@ public class PatientAgent extends Agent {
 
     protected void setup()
     {
-        System.out.println("Patient start");
         ServiceDescription sd  = new ServiceDescription();
-        sd.setType( "Patient" );
-        sd.setName( getLocalName() );
+        sd.setType( "patient" );
+        sd.setName(getLocalName());
         register(sd);
+
+
+        while(symptons.size() > 0){
+            addBehaviour(new Treatment());
+        }
+
     }
 
     void register(ServiceDescription sd)
@@ -136,10 +149,8 @@ public class PatientAgent extends Agent {
         dfd.setName(getAID());
         dfd.addServices(sd);
         try {
-            DFService.register(this, dfd );
-
-            System.out.println("Patient agent send Message");
-            addBehaviour(new SendMessage());
+            DFService.register(this, dfd);
+            triageConsultation();
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -157,38 +168,59 @@ public class PatientAgent extends Agent {
         }
     }
 
-    public class SendMessage extends SimpleBehaviour {
+    /************************************ SUPPORT FUNCTIONS ************************************/
 
-        private Boolean done;
 
-        public SendMessage(){
-            super();
+    public void triageConsultation(){
+
+        addBehaviour(new Triage(this));
+
+        // Send message to Common Agent
+
+        AMSAgentDescription[] agents = null;
+
+        try {
+            agents = AMSService.search(this, new AMSAgentDescription());
+        }
+        catch (Exception e) {
+            System.out.println( "Problem searching AMS: " + e);
+            e.printStackTrace();
         }
 
-        @Override
-        public void action() {
+        ACLMessage msg = new ACLMessage(ACLMessage.SUBSCRIBE);
+        msg.setContent("I need a traige consultation");
 
-            System.out.println("Init Send behavior action");
-
-            AMSAgentDescription[] agents = null;
-            try {
-                SearchConstraints c = new SearchConstraints();
-                c.setMaxResults (new Long(-1));
-                agents = AMSService.search(myAgent, new AMSAgentDescription(), c);
-            }
-            catch (Exception e) {
-                System.out.println( "Problem searching AMS: " + e );
-                e.printStackTrace();
-            }
-            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-            msg.setContent("Ping");
-
-            for (int i=0; i<agents.length;i++) {
-                System.out.println("Agent: " + agents[i].getName());
+        for(int i=0; i<agents.length;i++) {
+            if (agents[i].getName().compareTo("Common") == 0)
                 msg.addReceiver(agents[i].getName());
-            }
+        }
+        send(msg);
 
-            send(msg);
+    }
+
+
+    /************************************ BEHAVIORS  ************************************/
+
+
+    public class Triage extends SimpleBehaviour {
+
+        PatientAgent pa;
+
+        private boolean done;
+
+        public Triage(PatientAgent pa){
+            this.pa = pa;
+        }
+
+        public void action() {
+            done = false;
+            ACLMessage msg= receive();
+            if (msg!=null) {
+                if(msg.getSender().getName().compareTo("Common") == 0 && msg.getPerformative() == ACLMessage.INFORM && msg.getContent().compareTo("triage") == 0){
+                    pa.setHealthState();
+                }
+            }
+            block();
 
             done = true;
         }
@@ -197,12 +229,22 @@ public class PatientAgent extends Agent {
         public boolean done() {
             return done;
         }
+    }
+
+
+
+    public class Treatment extends SimpleBehaviour {
+
+        private boolean done;
 
         @Override
-        public int onEnd() {
-            takeDown();
-            myAgent.doDelete();
-            return super.onEnd();
+        public void action() {
+
+        }
+
+        @Override
+        public boolean done() {
+            return done;
         }
     }
 

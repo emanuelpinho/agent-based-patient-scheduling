@@ -28,25 +28,10 @@ public class CommonAgent extends Agent {
 
     protected void setup()
     {
-        patient = new PatientAgent();
         ServiceDescription sd  = new ServiceDescription();
         sd.setType( "Common" );
         sd.setName( getLocalName() );
         register(sd);
-
-        String name = "patient";
-
-        AgentContainer c = getContainerController();
-
-        try{
-            AgentController a = c.acceptNewAgent("paciente", patient);
-            a.start();
-        }
-        catch( Exception e ){
-            System.out.println(e.getCause());
-        }
-
-        addBehaviour(new WaiForMessage(this));
     }
 
     void register(ServiceDescription sd)
@@ -56,6 +41,7 @@ public class CommonAgent extends Agent {
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd );
+            addBehaviour(new WaiForMessage(this));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -87,6 +73,7 @@ public class CommonAgent extends Agent {
             if (msg!=null) {
                 System.out.println("Message received in : " + myAgent.getLocalName() + " -> " + msg.getContent()
                         + " from " + msg.getSender().getLocalName());
+
             }
             else
                 block();

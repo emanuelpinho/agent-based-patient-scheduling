@@ -18,7 +18,7 @@ public class MainTests {
 
         CommonAgent c = new CommonAgent();
 
-        PatientAgent p = new PatientAgent(symptons, "teste");
+        //PatientAgent p = new PatientAgent(symptons, "teste");
 
         try {
             Thread.sleep(4000);
