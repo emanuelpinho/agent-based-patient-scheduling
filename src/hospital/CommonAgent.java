@@ -24,11 +24,7 @@ public class CommonAgent extends Agent {
 
     public static String TYPE = "Common";
     public static String NEW_PATIENT_MESSAGE = "NEW PATIENT";
-
-    /**
-     * patient to do triage consultation
-     */
-    private PatientAgent patient;
+    public static String UPDATE_PATIENT_MESSAGE = "UPDATE PATIENT";
 
     private ArrayList<AID> waitingTriagePatients = new ArrayList<AID>();
 
@@ -38,7 +34,7 @@ public class CommonAgent extends Agent {
         System.out.println("Common Agent " + getLocalName() + " started.");
         ServiceDescription sd  = new ServiceDescription();
         sd.setType(CommonAgent.TYPE);
-        sd.setName(getLocalName());
+        sd.setName(getLocalName());   // REPLACE to "Common" ? And if exists more than one?
         register(sd);
     }
 
@@ -78,7 +74,6 @@ public class CommonAgent extends Agent {
 
         @Override
         public void action() {
-            System.out.println("Message to Common Agent: " + myAgent.getLocalName());
             ACLMessage message = receive();
             if (message != null) {
                 handleMessage(message);
@@ -94,36 +89,42 @@ public class CommonAgent extends Agent {
          * @param message Message received
          */
         private void handleMessage (ACLMessage message) {
-            switch (message.getPerformative()) {
-                case ACLMessage.INFORM:
-                    if (message.getContent().equals(CommonAgent.NEW_PATIENT_MESSAGE)) {
-                        AID patient = message.getSender();
+            AID patient = message.getSender();
+            String m = message.getContent();
 
+            switch (message.getPerformative()) {
+                case ACLMessage.SUBSCRIBE:
+                    System.out.println("SUBSCRIBE MESSAGE RECEIVED");
+                    if (m.equals(CommonAgent.NEW_PATIENT_MESSAGE)) {
                         // patient is unknown to Common Agent, add him to waitingTriagePatients
                         if (!waitingTriagePatients.contains(patient)) {
                             System.out.println("Add patient to watching list");
                             waitingTriagePatients.add(patient);
+
+                            ACLMessage reply = message.createReply();
+                            reply.setPerformative(ACLMessage.INFORM);
+                            reply.setContent(PatientAgent.NEW_TRIAGE_MESSAGE);
+                            send(reply);
                         }
                     }
                     break;
+                case ACLMessage.REQUEST:
+                    System.out.println("REQUEST MESSAGE RECEIVED");
+                    if (m.equals(CommonAgent.UPDATE_PATIENT_MESSAGE)) {
+
+                        // patient is unknown to Common Agent, add him to waitingTriagePatients
+                        if (waitingTriagePatients.contains(patient)) {
+                            ACLMessage reply = message.createReply();
+                            reply.setPerformative(ACLMessage.INFORM_REF);
+                            reply.setContent(PatientAgent.NEW_UPDATE_MESSAGE);
+                            send(reply);
+                        }
+                    }
+                    break;
+
             }
         }
 
-        /**
-         * Initial health state "s" is equals to 1 - symptoms ( fever 0.25, mulligrubs 0.1, back pain 0.15,
-         * heart palpitations 0.35, muscle aches 0.05, instestinal pain 0.2 )
-         * Decrease Rate "b" is equals to 1 - symptoms (  fever 0.6, mulligrubs 0.3, back pain 0.3,
-         * heart palpitations 0.6, muscle aches 0.2, instestinal pain 0.4 )
-         * Exams that patient has to do are equals to the symptoms list in same order to the symptoms list
-         */
-        public void triageConsultation(){
-            patient.setHealthState();
-        }
-
-        public void updateHealthState(){
-            patient.removeSymptom();
-            patient.setHealthState();
-        }
     }
 
 }

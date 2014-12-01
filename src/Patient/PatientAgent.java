@@ -16,11 +16,14 @@ import jade.wrapper.ControllerException;
 import symptons.Symptom;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
 
 public class PatientAgent extends Agent {
 
     public static String TYPE = "Agent";
+    public static String NEW_TRIAGE_MESSAGE = "TRIAGE";
+    public static String NEW_UPDATE_MESSAGE = "UPDATE";
 
     /**
      * List of symptoms the patient has.
@@ -59,59 +62,36 @@ public class PatientAgent extends Agent {
      */
     private long enterTime;
 
-    /**
-     * Patient agent listener for messages
-     */
-    private class WaiForMessage extends CyclicBehaviour {
 
-        public WaiForMessage(Agent a){
-            super(a);
-        }
-
-        @Override
-        public void action() {
-            System.out.println("Message to Patient Agent: " + myAgent.getLocalName());
-            ACLMessage message = receive();
-            if (message != null) {
-                handleMessage(message);
-            }
-            else {
-                block();
-            }
-        }
-
-        private void handleMessage (ACLMessage message) {
-            switch (message.getPerformative()) {
-                case ACLMessage.INFORM:
-                    System.out.println("INFORM");
-                    break;
-            }
-        }
-    }
     /************************************ Constructors ************************************/
-/*
-    public PatientAgent(ArrayList<String> symptoms, String name){
 
-        for(String symptom : symptoms) {
-            this.symptoms.add(new Symptom(symptom));
+    public void triage(){
+
+        String option;
+        Scanner scan = new Scanner(System.in);
+        this.symptoms = new ArrayList<Symptom>();
+        this.enterTime = System.currentTimeMillis();
+
+        String[] symptoms = new String[] {"fever","mulligrubs", "back pain", "heart palpitations",
+                "muscles aches", "intestinal pain"};
+
+        this.name = getLocalName();
+
+        for(String s : symptoms){
+            System.out.println("Do you have " + s + "? (y or n) ");
+            option = scan.nextLine();
+
+            while(option.compareTo("y") != 0 && option.compareTo("n") != 0){
+                System.out.println("Invalid choice.\n Do you have " + s + "? (y or n) ");
+                option = scan.nextLine();
+            }
+            if(option.compareTo("y") == 0)
+                this.symptoms.add(new Symptom(s));
         }
 
-        this.name = name;
-        this.enterTime = System.currentTimeMillis();
+        System.out.println("\n\n-----------------------------------------------------------------------------\n\n");
     }
-*/
-    /*
-    public PatientAgent(ArrayList<String> symptoms, String name){
 
-        this.name = name;
-
-        for(String symptom : symptoms){
-            this.symptoms.add(new Symptom(symptom));
-        }
-
-        this.enterTime = System.currentTimeMillis();
-    }
-    */
 
     /************************************ Get functions ************************************/
 
@@ -125,6 +105,14 @@ public class PatientAgent extends Agent {
 
     /************************************ Set functions ************************************/
 
+    /**
+     * Initial health state "s" is equals to 1 - symptoms ( fever 0.25, mulligrubs 0.1, back pain 0.15,
+     * heart palpitations 0.35, muscle aches 0.05, instestinal pain 0.2 )
+     * Decrease Rate "b" is equals to 1 - symptoms (  fever 0.6, mulligrubs 0.3, back pain 0.3,
+     * heart palpitations 0.6, muscle aches 0.2, instestinal pain 0.4 )
+     * Exams that patient has to do are equals to the symptoms list in same order to the symptoms list
+     */
+
     public void setHealthState(){
 
         float s = 0, b = 0;
@@ -136,9 +124,11 @@ public class PatientAgent extends Agent {
 
         this.decreaseRate = b;
         this.initialState = s;
-        long timeInHospital = System.currentTimeMillis() - enterTime;
+        long timeInHospital = System.currentTimeMillis() - enterTime; // retira um valor de decrease rate por cada 1440000 ms
 
-        this.healthState =  initialState-(decreaseRate/timeInHospital);
+        this.healthState =  initialState-((decreaseRate/1440000)*timeInHospital);
+
+        System.out.println("Health state is: " + this.healthState);
     }
 
     public Boolean removeSymptom(){
@@ -147,19 +137,24 @@ public class PatientAgent extends Agent {
         while(i < symptoms.size()){
             if(lastExam.compareTo(symptoms.get(i).getExam()) == 0){
                 symptoms.remove(i);
+                setHealthState();
                 return true;
             }
             else
                 i++;
         }
-
         return false;
     }
+
+
 
     /************************************ OVERRIDE FUNCTIONS ************************************/
 
 
     protected void setup() {
+
+        triage();
+
         System.out.println("Patient Agent " + getLocalName() + " started.");
         ServiceDescription sd  = new ServiceDescription();
         sd.setType(PatientAgent.TYPE);
@@ -170,8 +165,8 @@ public class PatientAgent extends Agent {
         ACLMessage message = new ACLMessage();
         message.setSender(this.getAID());
         message.setContent(CommonAgent.NEW_PATIENT_MESSAGE);
-        message.setPerformative(ACLMessage.INFORM);
-        message.addReceiver(new AID("Common", AID.ISLOCALNAME));
+        message.setPerformative(ACLMessage.SUBSCRIBE);
+        message.addReceiver(new AID("Common", AID.ISLOCALNAME));   // If exists 2 Common Agents
         send(message);
     }
 
@@ -181,8 +176,6 @@ public class PatientAgent extends Agent {
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd);
-
-            triageConsultation();
             addBehaviour(new WaiForMessage(this));
         }
         catch (FIPAException fe) {
@@ -201,85 +194,59 @@ public class PatientAgent extends Agent {
         }
     }
 
-    /************************************ SUPPORT FUNCTIONS ************************************/
-
-
-    public void triageConsultation(){
-
-        addBehaviour(new Triage(this));
-
-        // Send message to Common Agent
-
-        AMSAgentDescription[] agents;
-
-        try {
-            agents = AMSService.search(this, new AMSAgentDescription());
-        }
-        catch (Exception e) {
-            System.out.println( "Problem searching AMS: " + e);
-            e.printStackTrace();
-            return;
-        }
-
-        ACLMessage msg = new ACLMessage(ACLMessage.SUBSCRIBE);
-        msg.setContent("I need a traige consultation");
-
-        for(AMSAgentDescription agent : agents) {
-            if (agent.getName().toString().compareTo("Common") == 0)
-                msg.addReceiver(agent.getName());
-        }
-        send(msg);
-
-    }
-
 
     /************************************ BEHAVIORS  ************************************/
 
 
-    public class Triage extends SimpleBehaviour {
+    /**
+     * Patient agent listener for messages
+     */
+
+    private class WaiForMessage extends CyclicBehaviour {
 
         PatientAgent pa;
 
-        private boolean done;
-
-        public Triage(PatientAgent pa){
-            this.pa = pa;
+        public WaiForMessage(PatientAgent a){
+            super(a);
+            this.pa = a;
         }
 
+        @Override
         public void action() {
-            done = false;
-            ACLMessage msg= receive();
-            if (msg!=null) {
-                if(msg.getSender().getName().compareTo("Common") == 0 && msg.getPerformative() == ACLMessage.INFORM && msg.getContent().compareTo("triage") == 0){
-                    pa.setHealthState();
-                }
+            ACLMessage message = receive();
+            if (message != null) {
+                handleMessage(message);
             }
-            block();
-
-            done = true;
+            else {
+                block();
+            }
         }
 
-        @Override
-        public boolean done() {
-            return done;
+        private void handleMessage (ACLMessage message) {
+            String m = message.getContent();
+            String common = message.getSender().getName();
+
+            switch (message.getPerformative()) {
+                case ACLMessage.INFORM:
+                    System.out.println("INFORM MESSAGE RECEIVED");
+                    if (m.equals(PatientAgent.NEW_TRIAGE_MESSAGE)) {
+
+                        // patient is unknown to Common Agent, add him to waitingTriagePatients
+                        if (common.compareTo("Common") == 0) {
+                            pa.setHealthState();
+                        }
+                    }
+                    break;
+                case ACLMessage.INFORM_REF:
+                    System.out.println("INFORM_REF MESSAGE RECEIVED");
+                    if (m.equals(PatientAgent.NEW_UPDATE_MESSAGE)) {
+
+                        if (common.compareTo("Common") == 0) {
+                            pa.removeSymptom();
+                        }
+                    }
+                    break;
+            }
         }
     }
-
-
-
-    public class Treatment extends SimpleBehaviour {
-
-        private boolean done;
-
-        @Override
-        public void action() {
-
-        }
-
-        @Override
-        public boolean done() {
-            return done;
-        }
-    }
-
 }

@@ -1,10 +1,11 @@
-import hospital.CommonAgent;
+package main;
+
 import jade.Boot;
 
-/**
- * Created by Emanuelpinho on 18/11/14.
- */
+
 public class App {
+
+    public static String Common = "Common";
 
     public static void main(String [] args)
     {
@@ -68,6 +69,37 @@ help:
 
             done = true;
         }
+
+
+
+
+    public void triageConsultation(){
+
+        addBehaviour(new Triage(this));
+
+        // Send message to Common Agent
+
+        AMSAgentDescription[] agents;
+
+        try {
+            agents = AMSService.search(this, new AMSAgentDescription());
+        }
+        catch (Exception e) {
+            System.out.println( "Problem searching AMS: " + e);
+            e.printStackTrace();
+            return;
+        }
+
+        ACLMessage msg = new ACLMessage(ACLMessage.SUBSCRIBE);
+        msg.setContent("I need a traige consultation");
+
+        for(AMSAgentDescription agent : agents) {
+            if (agent.getName().toString().compareTo("Common") == 0)
+                msg.addReceiver(agent.getName());
+        }
+        send(msg);
+
+    }
  */
 
 
