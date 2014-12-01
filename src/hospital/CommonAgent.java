@@ -1,5 +1,6 @@
 package hospital;
 
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SimpleBehaviour;
@@ -21,16 +22,23 @@ import java.util.ArrayList;
  */
 public class CommonAgent extends Agent {
 
+    public static String TYPE = "Common";
+    public static String NEW_PATIENT_MESSAGE = "NEW PATIENT";
+
     /**
      * patient to do triage consultation
      */
     private PatientAgent patient;
 
+    private ArrayList<AID> waitingTriagePatients = new ArrayList<AID>();
+
+
     protected void setup()
     {
+        System.out.println("Common Agent " + getLocalName() + " started.");
         ServiceDescription sd  = new ServiceDescription();
-        sd.setType( "Common" );
-        sd.setName( getLocalName() );
+        sd.setType(CommonAgent.TYPE);
+        sd.setName(getLocalName());
         register(sd);
     }
 
@@ -59,8 +67,10 @@ public class CommonAgent extends Agent {
         }
     }
 
-
-    public class WaiForMessage extends CyclicBehaviour {
+    /**
+     * Common agent listener for messages
+     */
+    private class WaiForMessage extends CyclicBehaviour {
 
         public WaiForMessage(Agent a){
             super(a);
@@ -68,15 +78,35 @@ public class CommonAgent extends Agent {
 
         @Override
         public void action() {
-            System.out.println("Agent: " + myAgent.getLocalName());
-            ACLMessage msg = receive();
-            if (msg!=null) {
-                System.out.println("Message received in : " + myAgent.getLocalName() + " -> " + msg.getContent()
-                        + " from " + msg.getSender().getLocalName());
-
+            System.out.println("Message to Common Agent: " + myAgent.getLocalName());
+            ACLMessage message = receive();
+            if (message != null) {
+                handleMessage(message);
             }
-            else
+            else {
                 block();
+            }
+        }
+
+        /**
+         * Handle messages sent to Common Agent
+         * Currently the Common Agent listens for new patient arrivals
+         * @param message Message received
+         */
+        private void handleMessage (ACLMessage message) {
+            switch (message.getPerformative()) {
+                case ACLMessage.INFORM:
+                    if (message.getContent().equals(CommonAgent.NEW_PATIENT_MESSAGE)) {
+                        AID patient = message.getSender();
+
+                        // patient is unknown to Common Agent, add him to waitingTriagePatients
+                        if (!waitingTriagePatients.contains(patient)) {
+                            System.out.println("Add patient to watching list");
+                            waitingTriagePatients.add(patient);
+                        }
+                    }
+                    break;
+            }
         }
 
         /**

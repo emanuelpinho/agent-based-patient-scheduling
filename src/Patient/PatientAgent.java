@@ -1,5 +1,6 @@
 package patient;
 
+import hospital.CommonAgent;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -8,24 +9,24 @@ import jade.domain.AMSService;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.SearchConstraints;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.util.Logger;
+import jade.wrapper.ControllerException;
 import symptons.Symptom;
 
 import java.util.ArrayList;
-import java.util.Scanner;
 
 
 public class PatientAgent extends Agent {
 
+    public static String TYPE = "Agent";
+
     /**
-     * List of symptons that the patien has,
-     * which may include fever, mulligrubs, back pain, heart palpitations, muscle aches, intestinal pain
+     * List of symptoms the patient has.
+     * Which may include fever, mulligrubs, back pain, heart palpitations, muscle aches, intestinal pain
      */
-    private ArrayList<Symptom> symptons;
+    private ArrayList<Symptom> symptoms;
 
     /**
      * Name of patient to be easy to find him
@@ -33,7 +34,7 @@ public class PatientAgent extends Agent {
     private String name;
 
     /**
-     * Last exam that patient do
+     * Last exam that patient did
      */
     private String lastExam;
 
@@ -58,35 +59,64 @@ public class PatientAgent extends Agent {
      */
     private long enterTime;
 
+    /**
+     * Patient agent listener for messages
+     */
+    private class WaiForMessage extends CyclicBehaviour {
 
+        public WaiForMessage(Agent a){
+            super(a);
+        }
+
+        @Override
+        public void action() {
+            System.out.println("Message to Patient Agent: " + myAgent.getLocalName());
+            ACLMessage message = receive();
+            if (message != null) {
+                handleMessage(message);
+            }
+            else {
+                block();
+            }
+        }
+
+        private void handleMessage (ACLMessage message) {
+            switch (message.getPerformative()) {
+                case ACLMessage.INFORM:
+                    System.out.println("INFORM");
+                    break;
+            }
+        }
+    }
     /************************************ Constructors ************************************/
 /*
-    public PatientAgent(ArrayList<String> symptons, String name){
+    public PatientAgent(ArrayList<String> symptoms, String name){
 
-        for(String symptom : symptons) {
-            this.symptons.add(new Symptom(symptom));
+        for(String symptom : symptoms) {
+            this.symptoms.add(new Symptom(symptom));
         }
 
         this.name = name;
         this.enterTime = System.currentTimeMillis();
     }
 */
+    /*
     public PatientAgent(ArrayList<String> symptoms, String name){
 
         this.name = name;
 
         for(String symptom : symptoms){
-            this.symptons.add(new Symptom(symptom));
+            this.symptoms.add(new Symptom(symptom));
         }
 
         this.enterTime = System.currentTimeMillis();
     }
-
+    */
 
     /************************************ Get functions ************************************/
 
-    public ArrayList<Symptom> getSymptons(){
-        return symptons;
+    public ArrayList<Symptom> getSymptoms(){
+        return symptoms;
     }
 
     public String getLastExam(){
@@ -99,7 +129,7 @@ public class PatientAgent extends Agent {
 
         float s = 0, b = 0;
 
-        for(Symptom symptom : symptons){
+        for(Symptom symptom : symptoms){
             s += symptom.getHealth();
             b += symptom.getDecreaseRate();
         }
@@ -114,9 +144,9 @@ public class PatientAgent extends Agent {
     public Boolean removeSymptom(){
         int i = 0;
 
-        while(i < symptons.size()){
-            if(lastExam.compareTo(symptons.get(i).getExam()) == 0){
-                symptons.remove(i);
+        while(i < symptoms.size()){
+            if(lastExam.compareTo(symptoms.get(i).getExam()) == 0){
+                symptoms.remove(i);
                 return true;
             }
             else
@@ -129,28 +159,31 @@ public class PatientAgent extends Agent {
     /************************************ OVERRIDE FUNCTIONS ************************************/
 
 
-    protected void setup()
-    {
+    protected void setup() {
+        System.out.println("Patient Agent " + getLocalName() + " started.");
         ServiceDescription sd  = new ServiceDescription();
-        sd.setType( "patient" );
+        sd.setType(PatientAgent.TYPE);
         sd.setName(getLocalName());
         register(sd);
 
-
-        while(symptons.size() > 0){
-            addBehaviour(new Treatment());
-        }
-
+        // Inform common agent that new patient just arrived
+        ACLMessage message = new ACLMessage();
+        message.setSender(this.getAID());
+        message.setContent(CommonAgent.NEW_PATIENT_MESSAGE);
+        message.setPerformative(ACLMessage.INFORM);
+        message.addReceiver(new AID("Common", AID.ISLOCALNAME));
+        send(message);
     }
 
-    void register(ServiceDescription sd)
-    {
+    void register(ServiceDescription sd) {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd);
+
             triageConsultation();
+            addBehaviour(new WaiForMessage(this));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -177,7 +210,7 @@ public class PatientAgent extends Agent {
 
         // Send message to Common Agent
 
-        AMSAgentDescription[] agents = null;
+        AMSAgentDescription[] agents;
 
         try {
             agents = AMSService.search(this, new AMSAgentDescription());
@@ -185,14 +218,15 @@ public class PatientAgent extends Agent {
         catch (Exception e) {
             System.out.println( "Problem searching AMS: " + e);
             e.printStackTrace();
+            return;
         }
 
         ACLMessage msg = new ACLMessage(ACLMessage.SUBSCRIBE);
         msg.setContent("I need a traige consultation");
 
-        for(int i=0; i<agents.length;i++) {
-            if (agents[i].getName().compareTo("Common") == 0)
-                msg.addReceiver(agents[i].getName());
+        for(AMSAgentDescription agent : agents) {
+            if (agent.getName().toString().compareTo("Common") == 0)
+                msg.addReceiver(agent.getName());
         }
         send(msg);
 
