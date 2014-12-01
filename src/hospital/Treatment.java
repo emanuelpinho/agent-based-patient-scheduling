@@ -19,6 +19,8 @@ import patient.PatientAgent;
 import symptons.Symptom;
 
 import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Treatment extends Agent {
 
@@ -27,7 +29,12 @@ public class Treatment extends Agent {
 
     private String name;
 
+    protected AID doctorAID, patientAID;
+
+    protected boolean busy;
+
     public void constructor(){
+        busy = false;
         Scanner scan = new Scanner(System.in);
 
         System.out.println("What is the name of exam ? (analysis, endoscopy, resonance, electrocardiogram, " +
@@ -73,6 +80,7 @@ public class Treatment extends Agent {
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd);
+            addBehaviour(new WaitForMessage(this));
             makeInAction();
         }
         catch (FIPAException fe) {
@@ -82,13 +90,21 @@ public class Treatment extends Agent {
     }
 
     public void makeInAction(){
+        addBehaviour(new FindPeople(this));
+
+
+        Timer timer = new Timer();
+        timer.schedule(new requestTask(), 500);
+
+        /*
         onAction parBehaviour = new onAction(this, ParallelBehaviour.WHEN_ALL);
         parBehaviour.addSubBehaviour(new WaitForMessage(this));
         parBehaviour.addSubBehaviour(new FindPeople(this));
 
         addBehaviour(parBehaviour);
+        */
     }
-
+/*
     private class onAction extends ParallelBehaviour {
 
         Treatment t;
@@ -102,6 +118,12 @@ public class Treatment extends Agent {
             reset();
             t.addBehaviour(this);
             return super.onEnd();
+        }
+    }
+*/
+    class requestTask extends TimerTask {
+        public void run() {
+
         }
     }
 
@@ -134,6 +156,7 @@ public class Treatment extends Agent {
 
         @Override
         public void action() {
+            t.busy = true;
             done = false;
             DFAgentDescription dfd = new DFAgentDescription();
             ServiceDescription sd  = new ServiceDescription();
@@ -143,6 +166,8 @@ public class Treatment extends Agent {
 
             sd.setType(PatientAgent.TYPE);
             sendMessage(dfd, sd);
+
+            done = true;
         }
 
         @Override
@@ -152,18 +177,12 @@ public class Treatment extends Agent {
     }
 
     private class WaitForMessage extends CyclicBehaviour {
-
-        private Treatment t;
-
         private double doctorPropose, patientBid;
-
-        private AID doctorAID, patientAID;
 
         public WaitForMessage(Treatment a) {
             super(a);
             doctorPropose = 0;
             patientBid = 0;
-            this.t = a;
         }
 
         @Override
