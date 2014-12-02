@@ -1,8 +1,6 @@
 package hospital;
 
-/**
- * Created by Emanuelpinho on 01/12/14.
- */
+
 public class Experience {
 
     private int i;
@@ -17,5 +15,9 @@ public class Experience {
     public void incrementExp(){
         i++;
         exp = (0.1*i + 1)/0.1*i;
+    }
+
+    public double getExp(){
+        return exp;
     }
 }

@@ -120,6 +120,15 @@ public class PatientAgent extends Agent {
         return busy;
     }
 
+    public double calculateBid(double time){
+        double res;
+
+        res = (initialState * time) + (Math.pow(decreaseRate,2)/2);
+
+        return res;
+    }
+
+
     /************************************ Set functions ************************************/
 
     /**
@@ -143,7 +152,7 @@ public class PatientAgent extends Agent {
         this.initialState = s;
         long timeInHospital = System.currentTimeMillis() - enterTime; // retira um valor de decrease rate por cada 1440000 ms
 
-        this.healthState =  initialState-((decreaseRate/1440000)*timeInHospital);
+        this.healthState =  initialState-((decreaseRate/300000)*timeInHospital);
 
         System.out.println("Health state is: " + this.healthState);
     }
@@ -226,7 +235,7 @@ public class PatientAgent extends Agent {
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd);
-            addBehaviour(new WaiForMessage(this));
+            addBehaviour(new WaitForMessage(this));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -244,6 +253,14 @@ public class PatientAgent extends Agent {
         }
     }
 
+    protected void visitCommonAgent(){
+        ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+        message.setSender(this.getAID());
+        message.setContent(CommonAgent.UPDATE_PATIENT_MESSAGE);
+        message.addReceiver(new AID("Common", AID.ISLOCALNAME));   // If exists 2 Common Agents
+        send(message);
+    }
+
 
     /************************************ BEHAVIORS  ************************************/
 
@@ -252,11 +269,11 @@ public class PatientAgent extends Agent {
      * Patient agent listener for messages
      */
 
-    private class WaiForMessage extends CyclicBehaviour {
+    private class WaitForMessage extends CyclicBehaviour {
 
         PatientAgent pa;
 
-        public WaiForMessage(PatientAgent a){
+        public WaitForMessage(PatientAgent a){
             super(a);
             this.pa = a;
         }
@@ -293,7 +310,31 @@ public class PatientAgent extends Agent {
 
                         if (common.compareTo("Common") == 0) {
                             pa.removeSymptom();
+                            setBusy(false);
                         }
+                    }
+                    break;
+                case ACLMessage.REQUEST:
+                    System.out.println("REQUEST MESSAGE RECEIVED");
+                    if(!isBusy()) {
+                        double time = Double.parseDouble(m);
+                        double bid = calculateBid(time);
+                        ACLMessage reply = message.createReply();
+                        reply.setPerformative(ACLMessage.PROPOSE);
+                        reply.setContent(String.valueOf(bid));
+                        send(reply);
+                    }
+                    break;
+                case ACLMessage.ACCEPT_PROPOSAL:
+                    System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED");
+                    if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
+                        setBusy(true);
+                    }
+                    break;
+                case ACLMessage.AGREE:
+                    System.out.println("AGREE MESSAGE RECEIVED");
+                    if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE)) {
+                        visitCommonAgent();
                     }
                     break;
             }

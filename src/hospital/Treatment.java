@@ -18,23 +18,24 @@ import javafx.scene.Parent;
 import patient.PatientAgent;
 import symptons.Symptom;
 
-import java.util.PriorityQueue;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class Treatment extends Agent {
 
     public static String TYPE = "Treatment";
     public static String NEW_TREATMENT_MESSAGE = "TREATMENT_MESSAGE";
+    public static String BEGIN_TREATMENT_MESSAGE = "BEGIN_TREATMENT_MESSAGE";
+    public static String FINISH_TREATMENT_MESSAGE = "FINISH_TREATMENT_MESSAGE";
 
     private String name;
 
     protected AID doctorAID, patientAID;
 
+    protected double doctorPropose, patientBid, timeOfTreatment;
+
     protected boolean busy;
 
-    private PriorityQueue<AID> waitingList = new PriorityQueue<AID>();
+    private ArrayList<AID> waitingList = new ArrayList<AID>();
 
     public void constructor(){
         busy = false;
@@ -52,18 +53,9 @@ public class Treatment extends Agent {
                     "electrocardiogram, sonography or colonoscopy) ");
             option = scan.nextLine();
         }
-        if(option.compareTo("analysis") == 0)
-            this.name = option;
-        else if(option.compareTo("endoscopy") == 0)
-            this.name = option;
-        else if(option.compareTo("resonance") == 0)
-            this.name = option;
-        else if(option.compareTo("electrocardiogram") == 0)
-            this.name = option;
-        else if(option.compareTo("sonography") == 0)
-            this.name = option;
-        else if(option.compareTo("colonoscopy") == 0)
-            this.name = option;
+        this.name = option;
+        this.timeOfTreatment = 0;
+
     }
 
     protected void setup()
@@ -85,7 +77,6 @@ public class Treatment extends Agent {
             DFService.register(this, dfd);
             addBehaviour(new WaitForMessage(this));
             addBehaviour(new WaitingListBehaviour(this));
-            makeInAction();
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -93,90 +84,82 @@ public class Treatment extends Agent {
         }
     }
 
-    public void makeInAction(){
-        addBehaviour(new FindPeople(this));
-
-
-        Timer timer = new Timer();
-        timer.schedule(new requestTask(), 500);
-
-        /*
-        onAction parBehaviour = new onAction(this, ParallelBehaviour.WHEN_ALL);
-        parBehaviour.addSubBehaviour(new WaitForMessage(this));
-        parBehaviour.addSubBehaviour(new FindPeople(this));
-
-        addBehaviour(parBehaviour);
-        */
-    }
-/*
-    private class onAction extends ParallelBehaviour {
-
-        Treatment t;
-
-        public onAction(Treatment a, int endCondition) {
-            super(a, endCondition);
-            this.t = a;
-        }
-
-        public int onEnd() {
-            reset();
-            t.addBehaviour(this);
-            return super.onEnd();
-        }
-    }
-*/
-    class requestTask extends TimerTask {
-        public void run() {
-
-        }
+    public void setTimeOfTreatment(double doctorTime){
+        timeOfTreatment = doctorTime + 500;
     }
 
-    private class FindPeople extends SimpleBehaviour{
+    public void resetValues(){
+        doctorPropose = 0;
+        patientBid = 0;
+        timeOfTreatment = 0;
+        doctorAID = null;
+        patientAID = null;
+    }
 
-        private Treatment t;
+    private void askDoctors(DFAgentDescription dfd, ServiceDescription sd){
+        sd.setType(Doctor.TYPE);
 
-        private boolean done;
-
-        public FindPeople(Treatment a) {
-            super(a);
-            this.t = a;
-        }
-
-        private void sendMessage(DFAgentDescription dfd, ServiceDescription sd) {
-            dfd.addServices(sd);
-            try {
-                DFAgentDescription[] result = DFService.search(t, dfd);
-                ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
-                message.setContent(Treatment.NEW_TREATMENT_MESSAGE);
-                for(DFAgentDescription a : result){
-                    message.addReceiver(a.getName());
-                }
-                send(message);
-                done = true;
-            } catch (FIPAException e) {
-                e.printStackTrace();
+        dfd.addServices(sd);
+        try {
+            DFAgentDescription[] result = DFService.search(this, dfd);
+            ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+            message.setContent(Treatment.NEW_TREATMENT_MESSAGE);
+            for(DFAgentDescription a : result){
+                message.addReceiver(a.getName());
             }
+            send(message);
+            Thread.sleep(500);
+        } catch (FIPAException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+    }
 
-        @Override
-        public void action() {
-            t.busy = true;
-            done = false;
-            DFAgentDescription dfd = new DFAgentDescription();
-            ServiceDescription sd  = new ServiceDescription();
+    private void initBiding(DFAgentDescription dfd, ServiceDescription sd){
+        sd.setType(PatientAgent.TYPE);
 
-            sd.setType(Doctor.TYPE);
-            sendMessage(dfd, sd);
-
-            sd.setType(PatientAgent.TYPE);
-            sendMessage(dfd, sd);
-
-            done = true;
+        dfd.addServices(sd);
+        try {
+            DFAgentDescription[] result = DFService.search(this, dfd);
+            ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+            setTimeOfTreatment(doctorPropose);
+            message.setContent(String.valueOf(timeOfTreatment));
+            for(DFAgentDescription a : result){
+                if(waitingList.contains(a.getName()))
+                    message.addReceiver(a.getName());
+            }
+            send(message);
+            Thread.sleep(500);
+        } catch (FIPAException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+    }
 
-        @Override
-        public boolean done() {
-            return done;
+    private void initTreatment(DFAgentDescription dfd, ServiceDescription sd, AID doctor, AID patient){
+        dfd.addServices(sd);
+        try {
+            DFAgentDescription[] result = DFService.search(this, dfd);
+            ACLMessage message = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+            message.setContent(Treatment.BEGIN_TREATMENT_MESSAGE);
+            for(DFAgentDescription a : result){
+                if(a.getName().equals(doctor) || a.getName().equals(patient))
+                    message.addReceiver(a.getName());
+            }
+            send(message);
+            Thread.sleep((long) timeOfTreatment);
+
+            //FINISH TREATMENT
+
+            message.setPerformative(ACLMessage.AGREE);
+            message.setContent(Treatment.FINISH_TREATMENT_MESSAGE);
+            send(message);
+        } catch (FIPAException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -189,19 +172,30 @@ public class Treatment extends Agent {
         @Override
         public void action() {
             if (waitingList.size() > 0) {
-                AID patient = waitingList.poll();
-                System.out.println("CALL AND TREAT PATIENT"); // TODO
+                AID doctor, patient;
+                DFAgentDescription dfd = new DFAgentDescription();
+                ServiceDescription sd  = new ServiceDescription();
+                askDoctors(dfd, sd);
+                if(doctorAID == null)
+                    block();
+                doctor = doctorAID;
+                initBiding(dfd, sd);
+                if(patientAID == null)
+                    block();
+                patient = patientAID;
+                busy = true;
+                initTreatment(dfd, sd, doctor, patient);
+                busy = false;
+                resetValues();
             }
+            block();
         }
     }
 
     private class WaitForMessage extends CyclicBehaviour {
-        private double doctorPropose, patientBid;
 
         public WaitForMessage(Treatment a) {
             super(a);
-            doctorPropose = 0;
-            patientBid = 0;
         }
 
         @Override
@@ -223,7 +217,7 @@ public class Treatment extends Agent {
                 case ACLMessage.SUBSCRIBE:
                     m = Double.parseDouble(message.getContent());
                     System.out.println("SUBSCRIBE MESSAGE RECEIVED");
-                    if(m > doctorPropose){
+                    if(m > doctorPropose && !busy){
                         doctorPropose = m;
                         doctorAID = agent;
                     }
@@ -231,7 +225,7 @@ public class Treatment extends Agent {
                 case ACLMessage.PROPOSE:
                     m = Double.parseDouble(message.getContent());
                     System.out.println("PROPOSE MESSAGE RECEIVED");
-                    if(m > patientBid){
+                    if(m > patientBid && !busy){
                         patientBid = m;
                         patientAID = agent;
                     }
@@ -244,7 +238,5 @@ public class Treatment extends Agent {
                     break;
             }
         }
-
-
     }
 }
