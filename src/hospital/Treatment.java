@@ -18,6 +18,7 @@ import javafx.scene.Parent;
 import patient.PatientAgent;
 import symptons.Symptom;
 
+import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -32,6 +33,8 @@ public class Treatment extends Agent {
     protected AID doctorAID, patientAID;
 
     protected boolean busy;
+
+    private PriorityQueue<AID> waitingList = new PriorityQueue<AID>();
 
     public void constructor(){
         busy = false;
@@ -81,6 +84,7 @@ public class Treatment extends Agent {
         try {
             DFService.register(this, dfd);
             addBehaviour(new WaitForMessage(this));
+            addBehaviour(new WaitingListBehaviour(this));
             makeInAction();
         }
         catch (FIPAException fe) {
@@ -176,6 +180,21 @@ public class Treatment extends Agent {
         }
     }
 
+    private class WaitingListBehaviour extends CyclicBehaviour {
+
+        public WaitingListBehaviour(Agent a){
+            super(a);
+        }
+
+        @Override
+        public void action() {
+            if (waitingList.size() > 0) {
+                AID patient = waitingList.poll();
+                System.out.println("CALL AND TREAT PATIENT"); // TODO
+            }
+        }
+    }
+
     private class WaitForMessage extends CyclicBehaviour {
         private double doctorPropose, patientBid;
 
@@ -197,12 +216,12 @@ public class Treatment extends Agent {
         }
 
         private void handleMessage (ACLMessage message) {
-
-            Double m = Double.parseDouble(message.getContent());
+            Double m;
             AID agent = message.getSender();
 
             switch (message.getPerformative()) {
                 case ACLMessage.SUBSCRIBE:
+                    m = Double.parseDouble(message.getContent());
                     System.out.println("SUBSCRIBE MESSAGE RECEIVED");
                     if(m > doctorPropose){
                         doctorPropose = m;
@@ -210,10 +229,17 @@ public class Treatment extends Agent {
                     }
                     break;
                 case ACLMessage.PROPOSE:
+                    m = Double.parseDouble(message.getContent());
                     System.out.println("PROPOSE MESSAGE RECEIVED");
                     if(m > patientBid){
                         patientBid = m;
                         patientAID = agent;
+                    }
+                    break;
+                case ACLMessage.REQUEST:
+                    System.out.println("REQUEST MESSAGE RECEIVED - " + message.getContent());
+                    if(name.equals(message.getContent())) {
+                        waitingList.add(message.getSender());
                     }
                     break;
             }

@@ -1,6 +1,7 @@
 package patient;
 
 import hospital.CommonAgent;
+import hospital.Treatment;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
@@ -13,6 +14,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.wrapper.ControllerException;
+import sun.jvm.hotspot.debugger.cdbg.Sym;
 import symptons.Symptom;
 
 import java.util.ArrayList;
@@ -24,6 +26,8 @@ public class PatientAgent extends Agent {
     public static String TYPE = "Agent";
     public static String NEW_TRIAGE_MESSAGE = "TRIAGE";
     public static String NEW_UPDATE_MESSAGE = "UPDATE";
+    public static String TRIAGE_MESSAGE = "TRIAGE";
+    public static String REQUEST_TREATMENT = "REQUEST_TREATMENT";
 
     /**
      * List of symptoms the patient has.
@@ -62,6 +66,11 @@ public class PatientAgent extends Agent {
      */
     private long enterTime;
 
+    /**
+     * Patient may be busy if performing some treatment.
+     * When busy, a patient won't bid for any treatment auction.
+     */
+    private boolean busy = false;
 
     /************************************ Constructors ************************************/
 
@@ -103,6 +112,14 @@ public class PatientAgent extends Agent {
         return lastExam;
     }
 
+    /**
+     * Returns patient\'s busy state
+     * @return busy
+     */
+    public boolean isBusy() {
+        return busy;
+    }
+
     /************************************ Set functions ************************************/
 
     /**
@@ -134,21 +151,52 @@ public class PatientAgent extends Agent {
     public Boolean removeSymptom(){
         int i = 0;
 
-        while(i < symptoms.size()){
-            if(lastExam.compareTo(symptoms.get(i).getExam()) == 0){
+        while (i < symptoms.size()){
+            if (lastExam.compareTo(symptoms.get(i).getExam()) == 0){
                 symptoms.remove(i);
                 setHealthState();
                 return true;
             }
-            else
+            else {
                 i++;
+            }
         }
         return false;
     }
 
+    /**
+     * Set patient\'s busy state
+     * @param b Busy state
+     */
+    public void setBusy(boolean b) {
+        this.busy = b;
+    }
 
+    /**
+     * Send one message per symptom to the treatment agents
+     */
+    private void sendMessageToTreatments() {
+        for(Symptom s : symptoms) {
+            DFAgentDescription dfd = new DFAgentDescription();
+            ServiceDescription sd  = new ServiceDescription();
+            sd.setType(Treatment.TYPE);
+            dfd.addServices(sd);
+            try {
+                DFAgentDescription[] result = DFService.search(this, dfd);
+                ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+                message.setContent(s.getExam());
+                for(DFAgentDescription a : result){
+                    message.addReceiver(a.getName());
+                }
+                send(message);
+            } catch (FIPAException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     /************************************ OVERRIDE FUNCTIONS ************************************/
+
 
 
     protected void setup() {
@@ -168,6 +216,8 @@ public class PatientAgent extends Agent {
         message.setPerformative(ACLMessage.SUBSCRIBE);
         message.addReceiver(new AID("Common", AID.ISLOCALNAME));   // If exists 2 Common Agents
         send(message);
+
+        sendMessageToTreatments();
     }
 
     void register(ServiceDescription sd) {

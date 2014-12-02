@@ -16,6 +16,9 @@ import patient.PatientAgent;
 import symptons.Symptom;
 
 import java.util.ArrayList;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This agent is responsible to do first consultation and update health state after each exam
@@ -26,7 +29,7 @@ public class CommonAgent extends Agent {
     public static String NEW_PATIENT_MESSAGE = "NEW PATIENT";
     public static String UPDATE_PATIENT_MESSAGE = "UPDATE PATIENT";
 
-    private ArrayList<AID> waitingTriagePatients = new ArrayList<AID>();
+    private PriorityQueue<AID> waitingTriagePatients = new PriorityQueue<AID>();
 
 
     protected void setup()
@@ -46,6 +49,7 @@ public class CommonAgent extends Agent {
         try {
             DFService.register(this, dfd );
             addBehaviour(new WaiForMessage(this));
+            addBehaviour(new WaitingTriagePatientsBehaviour(this));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -60,6 +64,21 @@ public class CommonAgent extends Agent {
         }
         catch (Exception e) {
             System.out.println(e.getCause());
+        }
+    }
+
+    private class WaitingTriagePatientsBehaviour extends CyclicBehaviour {
+
+        public WaitingTriagePatientsBehaviour(Agent a){
+            super(a);
+        }
+
+        @Override
+        public void action() {
+            if (waitingTriagePatients.size() > 0) {
+                AID patient = waitingTriagePatients.poll();
+
+            }
         }
     }
 
@@ -93,6 +112,7 @@ public class CommonAgent extends Agent {
             String m = message.getContent();
 
             switch (message.getPerformative()) {
+                // patient subscription message
                 case ACLMessage.SUBSCRIBE:
                     System.out.println("SUBSCRIBE MESSAGE RECEIVED");
                     if (m.equals(CommonAgent.NEW_PATIENT_MESSAGE)) {
@@ -108,11 +128,10 @@ public class CommonAgent extends Agent {
                         }
                     }
                     break;
+                // update patient state after one treatment
                 case ACLMessage.REQUEST:
                     System.out.println("REQUEST MESSAGE RECEIVED");
                     if (m.equals(CommonAgent.UPDATE_PATIENT_MESSAGE)) {
-
-                        // patient is unknown to Common Agent, add him to waitingTriagePatients
                         if (waitingTriagePatients.contains(patient)) {
                             ACLMessage reply = message.createReply();
                             reply.setPerformative(ACLMessage.INFORM_REF);
@@ -121,10 +140,8 @@ public class CommonAgent extends Agent {
                         }
                     }
                     break;
-
             }
         }
 
     }
-
 }

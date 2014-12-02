@@ -17,5 +17,26 @@ public class Doctor extends Agent {
 
     private Map<String, Experience> exp;
 
+    /**
+     * Patient may be busy if performing some treatment.
+     * When busy, a patient won't bid for any treatment auction.
+     */
+    private boolean busy = false;
+
+    /**
+     * Returns patient\'s busy state
+     * @return busy
+     */
+    public boolean isBusy() {
+        return busy;
+    }
+
+    /**
+     * Set patient\'s busy state
+     * @param b Busy state
+     */
+    public void setBusy(boolean b) {
+        this.busy = b;
+    }
 
 }
