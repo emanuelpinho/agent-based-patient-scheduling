@@ -37,6 +37,15 @@ public class Treatment extends Agent {
 
     private ArrayList<AID> waitingList = new ArrayList<AID>();
 
+    public Treatment(){
+        constructor();
+    }
+
+    public Treatment(String name){
+        this.name = name;
+        this.timeOfTreatment = 0;
+    }
+
     public void constructor(){
         busy = false;
         Scanner scan = new Scanner(System.in);
@@ -60,8 +69,7 @@ public class Treatment extends Agent {
 
     protected void setup()
     {
-        constructor();
-        System.out.println("Treatment Agent " + getLocalName() + " started.");
+        System.out.println("Treatment Agent " + this.name + " started.");
         ServiceDescription sd  = new ServiceDescription();
         sd.setType(Treatment.TYPE);
         sd.setName(this.name);

@@ -8,8 +8,7 @@ import jade.domain.FIPAException;
 import jade.core.Agent;
 import jade.lang.acl.ACLMessage;
 
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 
 public class Doctor extends Agent {
@@ -19,7 +18,10 @@ public class Doctor extends Agent {
     /**
      * Experience that the Doctor has in a specific treatment
      */
-    private Map<String, Experience> exp;
+    private HashMap<String, Experience> exp = new HashMap<String, Experience>();
+
+
+    private String name;
 
     /**
      * Patient may be busy if performing some treatment.
@@ -47,6 +49,17 @@ public class Doctor extends Agent {
         return exp.get(treatment).getExp();
     }
 
+    public Doctor(){
+        System.out.println("entrou");
+        this.name = getLocalName();
+        constructor();
+    }
+
+    public Doctor(String name){
+        this.name = name;
+        constructor();
+    }
+
     public void incrementExp(String treatment){
         exp.get(treatment).incrementExp();
     }
@@ -62,11 +75,10 @@ public class Doctor extends Agent {
 
     protected void setup()
     {
-        constructor();
-        System.out.println("Doctor Agent " + getLocalName() + " started.");
+        System.out.println("Doctor Agent " + this.name + " started.");
         ServiceDescription sd  = new ServiceDescription();
         sd.setType(Treatment.TYPE);
-        sd.setName(getLocalName());
+        sd.setName(this.name);
         register(sd);
     }
 
@@ -84,7 +96,6 @@ public class Doctor extends Agent {
             doDelete();
         }
     }
-
 
     private class WaitForMessage extends CyclicBehaviour {
 

@@ -33,7 +33,7 @@ public class PatientAgent extends Agent {
      * List of symptoms the patient has.
      * Which may include fever, mulligrubs, back pain, heart palpitations, muscle aches, intestinal pain
      */
-    private ArrayList<Symptom> symptoms;
+    private ArrayList<Symptom> symptoms = new ArrayList<Symptom>();
 
     /**
      * Name of patient to be easy to find him
@@ -74,6 +74,20 @@ public class PatientAgent extends Agent {
 
     /************************************ Constructors ************************************/
 
+    public PatientAgent(){
+        triage();
+    }
+
+    public PatientAgent(String[] symp, String name){
+
+        this.enterTime = System.currentTimeMillis();
+        this.name = name;
+
+        for(String s : symp){
+            this.symptoms.add(new Symptom(s));
+        }
+    }
+
     public void triage(){
 
         String option;
@@ -84,7 +98,9 @@ public class PatientAgent extends Agent {
         String[] symptoms = new String[] {"fever","mulligrubs", "back pain", "heart palpitations",
                 "muscles aches", "intestinal pain"};
 
-        this.name = getLocalName();
+        System.out.println("What is your name?");
+        option = scan.nextLine();
+        this.name = option;
 
         for(String s : symptoms){
             System.out.println("Do you have " + s + "? (y or n) ");
@@ -209,13 +225,10 @@ public class PatientAgent extends Agent {
 
 
     protected void setup() {
-
-        triage();
-
         System.out.println("Patient Agent " + getLocalName() + " started.");
         ServiceDescription sd  = new ServiceDescription();
         sd.setType(PatientAgent.TYPE);
-        sd.setName(getLocalName());
+        sd.setName(this.name);
         register(sd);
 
         // Inform common agent that new patient just arrived
