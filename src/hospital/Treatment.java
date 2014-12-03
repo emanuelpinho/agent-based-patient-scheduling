@@ -224,7 +224,7 @@ public class Treatment extends Agent {
             switch (message.getPerformative()) {
                 case ACLMessage.SUBSCRIBE:
                     m = Double.parseDouble(message.getContent());
-                    System.out.println("SUBSCRIBE MESSAGE RECEIVED");
+                    //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     if(m > doctorPropose && !busy){
                         doctorPropose = m;
                         doctorAID = agent;
@@ -232,14 +232,14 @@ public class Treatment extends Agent {
                     break;
                 case ACLMessage.PROPOSE:
                     m = Double.parseDouble(message.getContent());
-                    System.out.println("PROPOSE MESSAGE RECEIVED");
+                    //System.out.println("PROPOSE MESSAGE RECEIVED AT TREATMENT");
                     if(m > patientBid && !busy){
                         patientBid = m;
                         patientAID = agent;
                     }
                     break;
                 case ACLMessage.REQUEST:
-                    System.out.println("REQUEST MESSAGE RECEIVED - " + message.getContent());
+                    //System.out.println("REQUEST MESSAGE RECEIVED AT TREATMENT - " + message.getContent());
                     if(name.equals(message.getContent())) {
                         waitingList.add(message.getSender());
                     }

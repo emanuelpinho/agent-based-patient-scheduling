@@ -50,7 +50,6 @@ public class Doctor extends Agent {
     }
 
     public Doctor(){
-        System.out.println("entrou");
         this.name = getLocalName();
         constructor();
     }
@@ -77,7 +76,7 @@ public class Doctor extends Agent {
     {
         System.out.println("Doctor Agent " + this.name + " started.");
         ServiceDescription sd  = new ServiceDescription();
-        sd.setType(Treatment.TYPE);
+        sd.setType(Doctor.TYPE);
         sd.setName(this.name);
         register(sd);
     }
@@ -120,9 +119,9 @@ public class Doctor extends Agent {
             String m = message.getContent();
             switch (message.getPerformative()) {
                 case ACLMessage.REQUEST:
-                    System.out.println("REQUEST MESSAGE RECEIVED");
+                    //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                     if(!isBusy()) {
-                        String t = message.getSender().getName();
+                        String t = message.getSender().getLocalName();
                         double exp = getExp(t) * 10;
                         ACLMessage reply = message.createReply();
                         reply.setPerformative(ACLMessage.SUBSCRIBE);
@@ -131,17 +130,17 @@ public class Doctor extends Agent {
                     }
                     break;
                 case ACLMessage.ACCEPT_PROPOSAL:
-                    System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED");
+                    //System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED AT DOCTOR");
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
                         setBusy(true);
-                        actualExam = message.getSender().getName();
+                        actualExam = message.getSender().getLocalName();
                     }
                     break;
                 case ACLMessage.AGREE:
-                    System.out.println("AGREE MESSAGE RECEIVED");
-                    String t = message.getSender().getName();
+                    //System.out.println("AGREE MESSAGE RECEIVED AT DOCTOR");
+                    String t = message.getSender().getLocalName();
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && t.compareTo(actualExam) == 0) {
-                        incrementExp(message.getSender().getName());
+                        incrementExp(t);
                         setBusy(false);
                         actualExam = null;
                     }
