@@ -174,7 +174,7 @@ public class PatientAgent extends Agent {
                 symptoms.remove(i);
                 setHealthState();
                 if (symptoms.size() == 0) {
-                   System.out.println("ESTOU CURADO CARALHO!!!!!!!!!");
+                   System.out.println("Paciente curado");
                 }
                 return true;
             }
@@ -324,7 +324,7 @@ public class PatientAgent extends Agent {
                     break;
                 case ACLMessage.REQUEST:
                     //System.out.println("REQUEST MESSAGE RECEIVED AT PATIENT");
-                    if(!isBusy()) {
+                    if(!isBusy() && symptoms.size() != 0) {
                         double time = Double.parseDouble(m);
                         double bid = calculateBid(time);
                         ACLMessage reply = message.createReply();

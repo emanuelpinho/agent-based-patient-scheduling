@@ -2,10 +2,7 @@ package hospital;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.ParallelBehaviour;
-import jade.core.behaviours.SequentialBehaviour;
-import jade.core.behaviours.SimpleBehaviour;
+import jade.core.behaviours.*;
 import jade.domain.AMSService;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
@@ -93,7 +90,7 @@ public class Treatment extends Agent {
     }
 
     public void setTimeOfTreatment(double doctorTime){
-        timeOfTreatment = doctorTime + 500;
+        timeOfTreatment = doctorTime*2 + 2000;
     }
 
     public void resetValues(){
@@ -116,10 +113,7 @@ public class Treatment extends Agent {
                 message.addReceiver(a.getName());
             }
             send(message);
-            Thread.sleep(500);
         } catch (FIPAException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -138,35 +132,59 @@ public class Treatment extends Agent {
                     message.addReceiver(a.getName());
             }
             send(message);
-            Thread.sleep(500);
         } catch (FIPAException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private void initTreatment(DFAgentDescription dfd, ServiceDescription sd, AID doctor, AID patient){
+    private void finishTreatment(DFAgentDescription dfd, ServiceDescription sd, AID doctor, AID patient){
+        dfd.addServices(sd);
+        try {
+            DFAgentDescription[] result = DFService.search(this, dfd);
+            ACLMessage message = new ACLMessage(ACLMessage.AGREE);
+            message.setContent(Treatment.FINISH_TREATMENT_MESSAGE);
+            for(DFAgentDescription a : result){
+                if(a.getName().equals(doctor) || a.getName().equals(patient))
+                    message.addReceiver(a.getName());
+            }
+            send(message);
+            waitingList.remove(patient);
+
+        } catch (FIPAException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void acceptProposal(DFAgentDescription dfd, ServiceDescription sd, AID person){
         dfd.addServices(sd);
         try {
             DFAgentDescription[] result = DFService.search(this, dfd);
             ACLMessage message = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
             message.setContent(Treatment.BEGIN_TREATMENT_MESSAGE);
             for(DFAgentDescription a : result){
-                if(a.getName().equals(doctor) || a.getName().equals(patient))
+                if(a.getName().equals(person))
                     message.addReceiver(a.getName());
             }
             send(message);
-            Thread.sleep((long) timeOfTreatment);
 
-            //FINISH TREATMENT
-
-            message.setPerformative(ACLMessage.AGREE);
-            message.setContent(Treatment.FINISH_TREATMENT_MESSAGE);
-            send(message);
         } catch (FIPAException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
+        }
+    }
+
+    private void releaseDoctor(DFAgentDescription dfd, ServiceDescription sd, AID doctor){
+        dfd.addServices(sd);
+        try {
+            DFAgentDescription[] result = DFService.search(this, dfd);
+            ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+            message.setContent(Treatment.FINISH_TREATMENT_MESSAGE);
+            for(DFAgentDescription a : result){
+                if(a.getName().equals(doctor))
+                    message.addReceiver(a.getName());
+            }
+            send(message);
+
+        } catch (FIPAException e) {
             e.printStackTrace();
         }
     }
@@ -177,22 +195,49 @@ public class Treatment extends Agent {
             super(a);
         }
 
+        public void doBlock(){
+            block();
+        }
+
         @Override
         public void action() {
             if (waitingList.size() > 0) {
-                AID doctor, patient;
-                DFAgentDescription dfd = new DFAgentDescription();
-                ServiceDescription sd  = new ServiceDescription();
+                final DFAgentDescription dfd = new DFAgentDescription();
+                final ServiceDescription sd  = new ServiceDescription();
                 askDoctors(dfd, sd);
-                if(doctorAID == null)
-                    block();
-                doctor = doctorAID;
-                initBiding(dfd, sd);
-                if(patientAID == null)
-                    block();
-                patient = patientAID;
-                busy = true;
-                initTreatment(dfd, sd, doctor, patient);
+                addBehaviour(new WakerBehaviour(myAgent, 100) {
+
+                    @Override
+                    protected void onWake() {
+                        super.onWake();
+                        if (doctorAID == null)
+                            doBlock();
+                        final AID doctor = doctorAID;
+                        acceptProposal(dfd, sd, doctor);
+                        initBiding(dfd, sd);
+
+                        addBehaviour(new WakerBehaviour(myAgent, 100) {
+
+                            @Override
+                            protected void onWake() {
+                                super.onWake();
+                                if(patientAID == null) {
+                                    releaseDoctor(dfd, sd, doctor);
+                                    doBlock();
+                                }
+                                AID patient = patientAID;
+                                busy = true;
+                                acceptProposal(dfd, sd, patient);
+                            }
+                        });
+                    }
+                });
+                try {
+                    Thread.sleep((long) timeOfTreatment);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                finishTreatment(dfd, sd, doctor, patient);
                 busy = false;
                 resetValues();
             }
@@ -223,6 +268,7 @@ public class Treatment extends Agent {
 
             switch (message.getPerformative()) {
                 case ACLMessage.SUBSCRIBE:
+                    System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     m = Double.parseDouble(message.getContent());
                     //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     if(m > doctorPropose && !busy){

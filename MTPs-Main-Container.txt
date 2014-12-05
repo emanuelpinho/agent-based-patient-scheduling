@@ -1,1 +1,1 @@
-http://mbpdeemanuel2.home:7778/acc
+http://172.30.35.105:7778/acc

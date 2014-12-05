@@ -117,12 +117,12 @@ public class Doctor extends Agent {
 
         private void handleMessage (ACLMessage message) {
             String m = message.getContent();
+            String s = message.getSender().getLocalName();
             switch (message.getPerformative()) {
                 case ACLMessage.REQUEST:
                     //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                     if(!isBusy()) {
-                        String t = message.getSender().getLocalName();
-                        double exp = getExp(t) * 10;
+                        double exp = getExp(s) * 10;
                         ACLMessage reply = message.createReply();
                         reply.setPerformative(ACLMessage.SUBSCRIBE);
                         reply.setContent(String.valueOf(exp));
@@ -133,14 +133,20 @@ public class Doctor extends Agent {
                     //System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED AT DOCTOR");
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
                         setBusy(true);
-                        actualExam = message.getSender().getLocalName();
+                        actualExam = s;
                     }
                     break;
                 case ACLMessage.AGREE:
                     //System.out.println("AGREE MESSAGE RECEIVED AT DOCTOR");
-                    String t = message.getSender().getLocalName();
-                    if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && t.compareTo(actualExam) == 0) {
-                        incrementExp(t);
+                    if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
+                        incrementExp(s);
+                        setBusy(false);
+                        actualExam = null;
+                    }
+                    break;
+                case ACLMessage.INFORM:
+                    //System.out.println("INFORM MESSAGE RECEIVED AT DOCTOR");
+                    if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
                         setBusy(false);
                         actualExam = null;
                     }
