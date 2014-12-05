@@ -2,7 +2,10 @@ package hospital;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.*;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.ParallelBehaviour;
+import jade.core.behaviours.SequentialBehaviour;
+import jade.core.behaviours.SimpleBehaviour;
 import jade.domain.AMSService;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
@@ -81,7 +84,9 @@ public class Treatment extends Agent {
         try {
             DFService.register(this, dfd);
             addBehaviour(new WaitForMessage(this));
-            addBehaviour(new WaitingListBehaviour(this));
+            WaitingListThread wl = new WaitingListThread();
+            wl.start();
+            addBehaviour(new WaitForMessage(this));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -113,7 +118,10 @@ public class Treatment extends Agent {
                 message.addReceiver(a.getName());
             }
             send(message);
+            Thread.sleep(100);
         } catch (FIPAException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -132,7 +140,10 @@ public class Treatment extends Agent {
                     message.addReceiver(a.getName());
             }
             send(message);
+            Thread.sleep(100);
         } catch (FIPAException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -149,7 +160,6 @@ public class Treatment extends Agent {
             }
             send(message);
             waitingList.remove(patient);
-
         } catch (FIPAException e) {
             e.printStackTrace();
         }
@@ -166,7 +176,6 @@ public class Treatment extends Agent {
                     message.addReceiver(a.getName());
             }
             send(message);
-
         } catch (FIPAException e) {
             e.printStackTrace();
         }
@@ -183,55 +192,31 @@ public class Treatment extends Agent {
                     message.addReceiver(a.getName());
             }
             send(message);
-
         } catch (FIPAException e) {
             e.printStackTrace();
         }
     }
 
-    private class WaitingListBehaviour extends CyclicBehaviour {
+    private class WaitingListThread extends Thread{
 
-        public WaitingListBehaviour(Agent a){
-            super(a);
-        }
-
-        public void doBlock(){
-            block();
-        }
-
-        @Override
-        public void action() {
-            if (waitingList.size() > 0) {
-                final DFAgentDescription dfd = new DFAgentDescription();
-                final ServiceDescription sd  = new ServiceDescription();
+        public void run() {
+            while (waitingList.size() > 0) {
+                AID doctor, patient;
+                DFAgentDescription dfd = new DFAgentDescription();
+                ServiceDescription sd  = new ServiceDescription();
                 askDoctors(dfd, sd);
-                addBehaviour(new WakerBehaviour(myAgent, 100) {
-
-                    @Override
-                    protected void onWake() {
-                        super.onWake();
-                        if (doctorAID == null)
-                            doBlock();
-                        final AID doctor = doctorAID;
-                        acceptProposal(dfd, sd, doctor);
-                        initBiding(dfd, sd);
-
-                        addBehaviour(new WakerBehaviour(myAgent, 100) {
-
-                            @Override
-                            protected void onWake() {
-                                super.onWake();
-                                if(patientAID == null) {
-                                    releaseDoctor(dfd, sd, doctor);
-                                    doBlock();
-                                }
-                                AID patient = patientAID;
-                                busy = true;
-                                acceptProposal(dfd, sd, patient);
-                            }
-                        });
-                    }
-                });
+                if(doctorAID == null)
+                    continue;
+                doctor = doctorAID;
+                acceptProposal(dfd, sd, doctor);
+                initBiding(dfd, sd);
+                if(patientAID == null) {
+                    releaseDoctor(dfd, sd, doctor);
+                    continue;
+                }
+                patient = patientAID;
+                busy = true;
+                acceptProposal(dfd, sd, patient);
                 try {
                     Thread.sleep((long) timeOfTreatment);
                 } catch (InterruptedException e) {
@@ -241,7 +226,6 @@ public class Treatment extends Agent {
                 busy = false;
                 resetValues();
             }
-            block();
         }
     }
 
@@ -270,7 +254,6 @@ public class Treatment extends Agent {
                 case ACLMessage.SUBSCRIBE:
                     System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     m = Double.parseDouble(message.getContent());
-                    //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     if(m > doctorPropose && !busy){
                         doctorPropose = m;
                         doctorAID = agent;
