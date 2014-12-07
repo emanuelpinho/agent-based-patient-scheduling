@@ -122,7 +122,7 @@ public class Doctor extends Agent {
                 case ACLMessage.REQUEST:
                     //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                     if(!isBusy()) {
-                        System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
+                        //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                         double exp = getExp(s) * 10;
                         ACLMessage reply = message.createReply();
                         reply.setPerformative(ACLMessage.SUBSCRIBE);

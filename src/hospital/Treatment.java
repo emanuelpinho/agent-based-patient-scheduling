@@ -86,7 +86,6 @@ public class Treatment extends Agent {
             addBehaviour(new WaitForMessage(this));
             WaitingListThread wl = new WaitingListThread();
             wl.start();
-            addBehaviour(new WaitForMessage(this));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -200,32 +199,38 @@ public class Treatment extends Agent {
     private class WaitingListThread extends Thread{
 
         public void run() {
-            while (waitingList.size() > 0) {
-                AID doctor, patient;
-                DFAgentDescription dfd = new DFAgentDescription();
-                ServiceDescription sd  = new ServiceDescription();
-                askDoctors(dfd, sd);
-                if(doctorAID == null)
-                    continue;
-                doctor = doctorAID;
-                acceptProposal(dfd, sd, doctor);
-                initBiding(dfd, sd);
-                if(patientAID == null) {
-                    releaseDoctor(dfd, sd, doctor);
-                    continue;
+            addBehaviour(new CyclicBehaviour() {
+                @Override
+                public void action() {
+                    if(waitingList.size() > 0){
+                        AID doctor, patient;
+                        DFAgentDescription dfd = new DFAgentDescription();
+                        ServiceDescription sd = new ServiceDescription();
+                        askDoctors(dfd, sd);
+                        if (doctorAID == null)
+                            block();
+                        doctor = doctorAID;
+                        acceptProposal(dfd, sd, doctor);
+                        initBiding(dfd, sd);
+                        if (patientAID == null) {
+                            releaseDoctor(dfd, sd, doctor);
+                            block();
+                        }
+                        patient = patientAID;
+                        busy = true;
+                        acceptProposal(dfd, sd, patient);
+                        try {
+                            Thread.sleep((long) timeOfTreatment);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        finishTreatment(dfd, sd, doctor, patient);
+                        busy = false;
+                        resetValues();
+                    }
+                    block();
                 }
-                patient = patientAID;
-                busy = true;
-                acceptProposal(dfd, sd, patient);
-                try {
-                    Thread.sleep((long) timeOfTreatment);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                finishTreatment(dfd, sd, doctor, patient);
-                busy = false;
-                resetValues();
-            }
+            });
         }
     }
 
@@ -252,7 +257,7 @@ public class Treatment extends Agent {
 
             switch (message.getPerformative()) {
                 case ACLMessage.SUBSCRIBE:
-                    System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
+                    //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     m = Double.parseDouble(message.getContent());
                     if(m > doctorPropose && !busy){
                         doctorPropose = m;

@@ -174,7 +174,9 @@ public class PatientAgent extends Agent {
                 symptoms.remove(i);
                 setHealthState();
                 if (symptoms.size() == 0) {
-                   System.out.println("Paciente curado");
+                    long timeInHospital = System.currentTimeMillis() - enterTime;
+                   System.out.println("Paciente com o nome: " + getLocalName() + " demorou " + timeInHospital + " a ser curado" );
+
                 }
                 return true;
             }
