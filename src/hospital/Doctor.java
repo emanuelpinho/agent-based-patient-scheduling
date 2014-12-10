@@ -110,9 +110,7 @@ public class Doctor extends Agent {
             if (message != null) {
                 handleMessage(message);
             }
-            else {
-                block();
-            }
+            block();
         }
 
         private void handleMessage (ACLMessage message) {
@@ -120,7 +118,6 @@ public class Doctor extends Agent {
             String s = message.getSender().getLocalName();
             switch (message.getPerformative()) {
                 case ACLMessage.REQUEST:
-                    //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                     if(!isBusy()) {
                         //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                         double exp = getExp(s) * 10;
@@ -133,12 +130,21 @@ public class Doctor extends Agent {
                 case ACLMessage.ACCEPT_PROPOSAL:
                     //System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED AT DOCTOR");
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
-                        setBusy(true);
-                        actualExam = s;
+                        if(!isBusy()) {
+                            System.out.println("DOCTOR IS NOT BUSY");
+                            setBusy(true);
+                            actualExam = s;
+                        }
+                        else {
+                            System.out.println("DOCTOR IS BUSY, SEARCH ANOTHER");
+                            ACLMessage reply = message.createReply();
+                            reply.setPerformative(ACLMessage.CANCEL);
+                            send(reply);
+                        }
                     }
                     break;
                 case ACLMessage.AGREE:
-                    //System.out.println("AGREE MESSAGE RECEIVED AT DOCTOR");
+                    System.out.println("AGREE MESSAGE RECEIVED AT DOCTOR");
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
                         incrementExp(s);
                         setBusy(false);

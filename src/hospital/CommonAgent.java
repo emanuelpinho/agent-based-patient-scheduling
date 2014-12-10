@@ -101,7 +101,6 @@ public class CommonAgent extends Agent {
 
                     if (m.equals(CommonAgent.NEW_PATIENT_MESSAGE)) {
                         if (!waitingTriagePatients.contains(patient)) {
-                            System.out.println("Add patient to watching list");
                             waitingTriagePatients.add(patient);
 
                             ACLMessage reply = message.createReply();

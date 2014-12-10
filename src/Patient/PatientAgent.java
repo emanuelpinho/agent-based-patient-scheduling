@@ -296,9 +296,7 @@ public class PatientAgent extends Agent {
             if (message != null) {
                 handleMessage(message);
             }
-            else {
-                block();
-            }
+            block();
         }
 
         private void handleMessage (ACLMessage message) {
@@ -329,21 +327,32 @@ public class PatientAgent extends Agent {
                     if(!isBusy() && symptoms.size() != 0) {
                         double time = Double.parseDouble(m);
                         double bid = calculateBid(time);
+
                         ACLMessage reply = message.createReply();
                         reply.setPerformative(ACLMessage.PROPOSE);
                         reply.setContent(String.valueOf(bid));
                         send(reply);
+
                     }
                     break;
                 case ACLMessage.ACCEPT_PROPOSAL:
                     //System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED AT PATIENT");
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
-                        System.out.println("The Patient " + getLocalName() + " began the exam " + message.getSender().getLocalName());
-                        setBusy(true);
+                        if(!isBusy()){
+                            System.out.println("The Patient " + getLocalName() + " began the exam " + message.getSender().getLocalName());
+                            setBusy(true);
+                        }
+                        else{
+                            System.out.println("PATIENT IS BUSY, SEARCH ANOTHER");
+                            ACLMessage reply = message.createReply();
+                            reply.setPerformative(ACLMessage.FAILURE);
+                            send(reply);
+                        }
+
                     }
                     break;
                 case ACLMessage.AGREE:
-                    //System.out.println("AGREE MESSAGE RECEIVED AT PATIENT");
+                    System.out.println("AGREE MESSAGE RECEIVED AT PATIENT");
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE)) {
                         visitCommonAgent();
                         setLastExam(message.getSender().getLocalName());

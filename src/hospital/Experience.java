@@ -9,7 +9,7 @@ public class Experience {
 
     public Experience(){
         i=1;
-        exp=0;
+        exp=(0.1*i + 1)/0.1*i;
     }
 
     public void incrementExp(){

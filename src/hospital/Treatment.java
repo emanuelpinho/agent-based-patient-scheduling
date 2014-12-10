@@ -33,7 +33,7 @@ public class Treatment extends Agent {
 
     protected double doctorPropose, patientBid, timeOfTreatment;
 
-    protected boolean busy;
+    protected boolean busy, doctorSearch, patientSearch;
 
     private ArrayList<AID> waitingList = new ArrayList<AID>();
 
@@ -64,6 +64,8 @@ public class Treatment extends Agent {
         }
         this.name = option;
         this.timeOfTreatment = 0;
+        this.doctorSearch = true;
+        this.patientSearch = true;
 
     }
 
@@ -103,134 +105,120 @@ public class Treatment extends Agent {
         timeOfTreatment = 0;
         doctorAID = null;
         patientAID = null;
-    }
-
-    private void askDoctors(DFAgentDescription dfd, ServiceDescription sd){
-        sd.setType(Doctor.TYPE);
-
-        dfd.addServices(sd);
-        try {
-            DFAgentDescription[] result = DFService.search(this, dfd);
-            ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
-            message.setContent(Treatment.NEW_TREATMENT_MESSAGE);
-            for(DFAgentDescription a : result){
-                message.addReceiver(a.getName());
-            }
-            send(message);
-            Thread.sleep(100);
-        } catch (FIPAException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void initBiding(DFAgentDescription dfd, ServiceDescription sd){
-        sd.setType(PatientAgent.TYPE);
-
-        dfd.addServices(sd);
-        try {
-            DFAgentDescription[] result = DFService.search(this, dfd);
-            ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
-            setTimeOfTreatment(doctorPropose);
-            message.setContent(String.valueOf(timeOfTreatment));
-            for(DFAgentDescription a : result){
-                if(waitingList.contains(a.getName()))
-                    message.addReceiver(a.getName());
-            }
-            send(message);
-            Thread.sleep(100);
-        } catch (FIPAException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void finishTreatment(DFAgentDescription dfd, ServiceDescription sd, AID doctor, AID patient){
-        dfd.addServices(sd);
-        try {
-            DFAgentDescription[] result = DFService.search(this, dfd);
-            ACLMessage message = new ACLMessage(ACLMessage.AGREE);
-            message.setContent(Treatment.FINISH_TREATMENT_MESSAGE);
-            for(DFAgentDescription a : result){
-                if(a.getName().equals(doctor) || a.getName().equals(patient))
-                    message.addReceiver(a.getName());
-            }
-            send(message);
-            waitingList.remove(patient);
-        } catch (FIPAException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void acceptProposal(DFAgentDescription dfd, ServiceDescription sd, AID person){
-        dfd.addServices(sd);
-        try {
-            DFAgentDescription[] result = DFService.search(this, dfd);
-            ACLMessage message = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-            message.setContent(Treatment.BEGIN_TREATMENT_MESSAGE);
-            for(DFAgentDescription a : result){
-                if(a.getName().equals(person))
-                    message.addReceiver(a.getName());
-            }
-            send(message);
-        } catch (FIPAException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void releaseDoctor(DFAgentDescription dfd, ServiceDescription sd, AID doctor){
-        dfd.addServices(sd);
-        try {
-            DFAgentDescription[] result = DFService.search(this, dfd);
-            ACLMessage message = new ACLMessage(ACLMessage.INFORM);
-            message.setContent(Treatment.FINISH_TREATMENT_MESSAGE);
-            for(DFAgentDescription a : result){
-                if(a.getName().equals(doctor))
-                    message.addReceiver(a.getName());
-            }
-            send(message);
-        } catch (FIPAException e) {
-            e.printStackTrace();
-        }
+        doctorSearch = true;
+        patientSearch = true;
     }
 
     private class WaitingListThread extends Thread{
 
+        private void sendMessage(String type, String content, int performative, AID receiver){
+            DFAgentDescription dfd = new DFAgentDescription();
+            ServiceDescription sd = new ServiceDescription();
+            sd.setType(type);
+            dfd.addServices(sd);
+            try {
+                DFAgentDescription[] result = DFService.search(Treatment.this, dfd);
+                ACLMessage message = new ACLMessage(performative);
+                message.setContent(content);
+                if(receiver == null) {
+                    for (DFAgentDescription a : result) {
+                        message.addReceiver(a.getName());
+                    }
+                }
+                else{
+                    for(DFAgentDescription a : result){
+                        if(a.getName().equals(receiver))
+                            message.addReceiver(a.getName());
+                    }
+                }
+                send(message);
+            } catch (FIPAException e) {
+                e.printStackTrace();
+            }
+        }
+
         public void run() {
-            addBehaviour(new CyclicBehaviour() {
-                @Override
-                public void action() {
-                    if(waitingList.size() > 0){
-                        AID doctor, patient;
-                        DFAgentDescription dfd = new DFAgentDescription();
-                        ServiceDescription sd = new ServiceDescription();
-                        askDoctors(dfd, sd);
-                        if (doctorAID == null)
-                            block();
-                        doctor = doctorAID;
-                        acceptProposal(dfd, sd, doctor);
-                        initBiding(dfd, sd);
-                        if (patientAID == null) {
-                            releaseDoctor(dfd, sd, doctor);
-                            block();
-                        }
-                        patient = patientAID;
-                        busy = true;
-                        acceptProposal(dfd, sd, patient);
+            Random ran = new Random();
+
+            while( 1==1 ) {
+                if (waitingList.size() > 0) {
+
+                    sendMessage(Doctor.TYPE, Treatment.NEW_TREATMENT_MESSAGE, ACLMessage.REQUEST, null);
+
+                    try {
+                        Thread.sleep(ran.nextInt(1000));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    doctorSearch = false;
+
+                    if (doctorAID != null) {
+
+                        sendMessage(Doctor.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, doctorAID);
+
                         try {
-                            Thread.sleep((long) timeOfTreatment);
+                            Thread.sleep(600);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        finishTreatment(dfd, sd, doctor, patient);
-                        busy = false;
-                        resetValues();
+
+                        if(!doctorSearch) {
+
+                            setTimeOfTreatment(doctorPropose);
+
+                            for (AID p : waitingList)
+                                sendMessage(PatientAgent.TYPE, String.valueOf(timeOfTreatment), ACLMessage.REQUEST, p);
+
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+                            if (patientAID != null) {
+
+                                patientSearch = false;
+                                sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
+
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+
+                                if (!patientSearch) {
+
+                                    busy = true;
+
+                                    System.out.println("Patient " + patientAID + " win bidding at " + getLocalName() + " and wait " + timeOfTreatment);
+                                    try {
+                                        Thread.sleep((long) timeOfTreatment);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    sendMessage(PatientAgent.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, patientAID);
+                                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, doctorAID);
+                                    busy = false;
+                                } else
+                                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.INFORM, doctorAID);
+                            }
+                        }
+                        else{
+                            System.out.println("OK, i go to search another doctor");
+                        }
                     }
-                    block();
                 }
-            });
+
+                System.out.println("END OF CYCLE");
+
+                resetValues();
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -246,20 +234,18 @@ public class Treatment extends Agent {
             if (message != null) {
                 handleMessage(message);
             }
-            else {
-                block();
-            }
+            block();
         }
 
         private void handleMessage (ACLMessage message) {
-            Double m;
+            double m;
             AID agent = message.getSender();
 
             switch (message.getPerformative()) {
                 case ACLMessage.SUBSCRIBE:
                     //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     m = Double.parseDouble(message.getContent());
-                    if(m > doctorPropose && !busy){
+                    if (m > doctorPropose && !busy && doctorSearch) {
                         doctorPropose = m;
                         doctorAID = agent;
                     }
@@ -267,16 +253,25 @@ public class Treatment extends Agent {
                 case ACLMessage.PROPOSE:
                     m = Double.parseDouble(message.getContent());
                     //System.out.println("PROPOSE MESSAGE RECEIVED AT TREATMENT");
-                    if(m > patientBid && !busy){
+                    if (m > patientBid && !busy && patientSearch) {
                         patientBid = m;
                         patientAID = agent;
                     }
                     break;
                 case ACLMessage.REQUEST:
                     //System.out.println("REQUEST MESSAGE RECEIVED AT TREATMENT - " + message.getContent());
-                    if(name.equals(message.getContent())) {
+                    if (name.equals(message.getContent())) {
                         waitingList.add(message.getSender());
                     }
+
+                case ACLMessage.CANCEL:
+                    //System.out.println("CANCEL MESSAGE RECEIVED AT TREATMENT ");
+                    doctorSearch = true;
+                    break;
+
+                case ACLMessage.FAILURE:
+                    //System.out.println("FAILURE MESSAGE RECEIVED AT TREATMENT ");
+                    patientSearch = true;
                     break;
             }
         }
