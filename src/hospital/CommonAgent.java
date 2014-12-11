@@ -112,10 +112,9 @@ public class CommonAgent extends Agent {
                     break;
 
                 case ACLMessage.REQUEST:
-                    //System.out.println("REQUEST MESSAGE RECEIVED AT COMMON");
-
                     if (m.equals(CommonAgent.UPDATE_PATIENT_MESSAGE)) {
                         if (waitingTriagePatients.contains(patient)) {
+                            //System.out.println("REQUEST MESSAGE RECEIVED AT COMMON");
                             ACLMessage reply = message.createReply();
                             reply.setPerformative(ACLMessage.INFORM_REF);
                             reply.setContent(PatientAgent.NEW_UPDATE_MESSAGE);

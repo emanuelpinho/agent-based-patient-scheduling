@@ -30,7 +30,7 @@ public class Treatment extends Agent {
 
     protected double doctorPropose, patientBid, timeOfTreatment;
 
-    protected boolean busy, doctorSearch, patientSearch;
+    protected boolean busy;
 
     private ArrayList<AID> waitingList = new ArrayList<AID>();
 
@@ -61,9 +61,6 @@ public class Treatment extends Agent {
         }
         this.name = option;
         this.timeOfTreatment = 0;
-        this.doctorSearch = true;
-        this.patientSearch = true;
-
     }
 
     protected void setup()
@@ -101,8 +98,6 @@ public class Treatment extends Agent {
         timeOfTreatment = 0;
         doctorAID = null;
         patientAID = null;
-        doctorSearch = true;
-        patientSearch = true;
     }
 
     private enum State {
@@ -110,10 +105,12 @@ public class Treatment extends Agent {
         LOOKING_FOR_MEDICS,
         WAITING_FOR_MEDIC_APPROVAL,
         START_TREATMENT,
-        FINISH_TREATMENT
+        FINISH_TREATMENT,
+        LEAVE_DOCTOR,
+        DISABLE_STATE
     }
 
-    private State state = State.LOOKING_FOR_PATIENTS;
+    private State state = State.LOOKING_FOR_MEDICS;
 
     private class WaitingListBehaviour extends TickerBehaviour {
 
@@ -153,58 +150,69 @@ public class Treatment extends Agent {
             switch (state) {
                 case LOOKING_FOR_MEDICS:
                     if (waitingList.size() == 0) {
+                        //System.out.println("No patients waiting");
                         return;
                     }
-                    System.out.println("Looking for medics for treatment");
+                    resetValues();
+                    //System.out.println("Looking for doctors for treatment");
                     sendMessage(Doctor.TYPE, Treatment.NEW_TREATMENT_MESSAGE, ACLMessage.REQUEST, null);
                     state = State.WAITING_FOR_MEDIC_APPROVAL;
                     break;
                 case WAITING_FOR_MEDIC_APPROVAL:
                     if (doctorAID != null) {
-                        System.out.println("Looking for medic approval to start treatment");
+                        //System.out.println("Looking for medical approval to start treatment");
                         sendMessage(Doctor.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, doctorAID);
                         state = State.LOOKING_FOR_PATIENTS;
                     } else {
-                        System.out.println("Starting all over again");
+                        //System.out.println("Starting all over again");
                         state = State.LOOKING_FOR_MEDICS;
                     }
                     break;
                 case LOOKING_FOR_PATIENTS:
-
-                    System.out.println("Looking for patients for the treatment");
+                    //System.out.println("Looking for patients for the treatment");
                     setTimeOfTreatment(doctorPropose);
                     for (AID p : waitingList) {
                         sendMessage(PatientAgent.TYPE, String.valueOf(timeOfTreatment), ACLMessage.REQUEST, p);
                     }
                     state = State.START_TREATMENT;
-
                     break;
                 case START_TREATMENT:
-                    if (patientAID == null) {
-                        System.out.println("Starting all over again");
-                        sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE + " - ", ACLMessage.INFORM, doctorAID);
-                        state = State.LOOKING_FOR_MEDICS;
+                    if (patientAID != null) {
+                        //System.out.println("Telling patient to begin treatment");
+                        sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
+                        state = State.DISABLE_STATE;
+                        addBehaviour(new WakerBehaviour(Treatment.this, (long) timeOfTreatment) {
+                            @Override
+                            protected void onWake() {
+                                super.onWake();
+                                System.out.println("Treatment: " + getLocalName() + " is over");
+                                state = State.FINISH_TREATMENT;
+                            }
+                        });
                         return;
                     }
-                    System.out.println("Telling patient to begin treatment");
-                    patientSearch = false;
-                    sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
-                    break;
-                case FINISH_TREATMENT:
-                    if (!patientSearch) {
-                        System.out.println("Telling doctor and patient that treatment is over");
-                        sendMessage(PatientAgent.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, patientAID);
-                        sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, doctorAID);
-                        waitingList.remove(patientAID);
-                    } else {
-                        System.out.println("Telling doctor that no patient was found");
-                        sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.INFORM, doctorAID);
-                    }
+
+                    //System.out.println("Starting all over again");
+                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.INFORM, doctorAID);
                     state = State.LOOKING_FOR_MEDICS;
                     break;
+
+                case FINISH_TREATMENT:
+                    //System.out.println("Telling doctor and patient that treatment is over");
+                    sendMessage(PatientAgent.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, patientAID);
+                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, doctorAID);
+                    waitingList.remove(patientAID);
+
+                    state = State.LOOKING_FOR_MEDICS;
+                    break;
+                case LEAVE_DOCTOR:
+                    //System.out.println("Starting all over again");
+                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.INFORM, doctorAID);
+                    state = State.LOOKING_FOR_MEDICS;
+                    break;
+                default:
+                    break;
             }
-
-
         }
     }
 
@@ -231,7 +239,7 @@ public class Treatment extends Agent {
                 case ACLMessage.SUBSCRIBE:
                     //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     m = Double.parseDouble(message.getContent());
-                    if (m > doctorPropose && !busy && doctorSearch) {
+                    if (m > doctorPropose && !busy && state == State.WAITING_FOR_MEDIC_APPROVAL) {
                         doctorPropose = m;
                         doctorAID = agent;
                     }
@@ -239,7 +247,7 @@ public class Treatment extends Agent {
                 case ACLMessage.PROPOSE:
                     m = Double.parseDouble(message.getContent());
                     //System.out.println("PROPOSE MESSAGE RECEIVED AT TREATMENT");
-                    if (m > patientBid && !busy && patientSearch) {
+                    if (m > patientBid && !busy && state == State.START_TREATMENT) {
                         patientBid = m;
                         patientAID = agent;
                     }
@@ -252,12 +260,12 @@ public class Treatment extends Agent {
 
                 case ACLMessage.CANCEL:
                     //System.out.println("CANCEL MESSAGE RECEIVED AT TREATMENT ");
-                    doctorSearch = true;
+                    state = State.LOOKING_FOR_MEDICS;
                     break;
 
                 case ACLMessage.FAILURE:
                     //System.out.println("FAILURE MESSAGE RECEIVED AT TREATMENT ");
-                    patientSearch = true;
+                    state = State.LEAVE_DOCTOR;
                     break;
             }
         }

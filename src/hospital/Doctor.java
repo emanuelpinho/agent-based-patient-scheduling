@@ -42,7 +42,7 @@ public class Doctor extends Agent {
      * @param b Busy state
      */
     public void setBusy(boolean b) {
-        System.out.println("Setting Doctor " + name + " busy state: " + b);
+        //System.out.println("Setting Doctor " + name + " busy state: " + b);
         this.busy = b;
     }
 
@@ -115,6 +115,7 @@ public class Doctor extends Agent {
             ACLMessage reply = message.createReply();
             switch (message.getPerformative()) {
                 case ACLMessage.REQUEST:
+                    //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
                     if(isBusy()) {
                         return;
                     }
@@ -127,12 +128,13 @@ public class Doctor extends Agent {
                 case ACLMessage.ACCEPT_PROPOSAL:
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
                         if(!isBusy()) {
-                            System.out.println("DOCTOR " + name + " IS NOT BUSY");
+                            //System.out.println("DOCTOR " + name + " IS NOT BUSY");
                             setBusy(true);
+                            //System.out.println("DOCTOR IS NOW BUSY");
                             actualExam = s;
                         }
                         else {
-                            System.out.println("DOCTOR " + name + " IS BUSY, SEARCH ANOTHER");
+                            //System.out.println("DOCTOR " + name + " IS BUSY, SEARCH ANOTHER");
                             reply = message.createReply();
                             reply.setPerformative(ACLMessage.CANCEL);
                             send(reply);
@@ -140,7 +142,7 @@ public class Doctor extends Agent {
                     }
                     break;
                 case ACLMessage.AGREE:
-                    System.out.println("AGREE MESSAGE RECEIVED AT DOCTOR");
+                    //System.out.println("AGREE MESSAGE RECEIVED AT DOCTOR");
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
                         incrementExp(s);
                         setBusy(false);

@@ -162,7 +162,7 @@ public class PatientAgent extends Agent {
 
         this.healthState =  initialState-((decreaseRate/300000)*timeInHospital);
 
-        System.out.println("The health state of " + getLocalName() + " is: " + this.healthState);
+        //System.out.println("The health state of " + getLocalName() + " is: " + this.healthState);
     }
 
     public Boolean removeSymptom(){
@@ -170,7 +170,7 @@ public class PatientAgent extends Agent {
 
         while (i < symptoms.size()){
             if (lastExam.compareTo(symptoms.get(i).getExam()) == 0){
-                System.out.println("The patient removed the symptom: " + symptoms.get(i).getExam());
+                //System.out.println("The patient removed the symptom: " + symptoms.get(i).getExam());
                 symptoms.remove(i);
                 setHealthState();
                 if (symptoms.size() == 0) {
@@ -323,11 +323,10 @@ public class PatientAgent extends Agent {
                     }
                     break;
                 case ACLMessage.REQUEST:
-                    //System.out.println("REQUEST MESSAGE RECEIVED AT PATIENT");
                     if(!isBusy() && symptoms.size() != 0) {
                         double time = Double.parseDouble(m);
                         double bid = calculateBid(time);
-
+                        //System.out.println("REQUEST MESSAGE RECEIVED AT PATIENT AND ANSWER WITH " + bid + " value");
                         ACLMessage reply = message.createReply();
                         reply.setPerformative(ACLMessage.PROPOSE);
                         reply.setContent(String.valueOf(bid));
@@ -339,11 +338,12 @@ public class PatientAgent extends Agent {
                     //System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED AT PATIENT");
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
                         if(!isBusy()){
-                            System.out.println("The Patient " + getLocalName() + " began the exam " + message.getSender().getLocalName());
+                            //System.out.println("PATIENT IS NOT BUSY");
+                            //System.out.println("The Patient " + getLocalName() + " began the exam " + message.getSender().getLocalName());
                             setBusy(true);
                         }
                         else{
-                            System.out.println("PATIENT IS BUSY, SEARCH ANOTHER");
+                            //System.out.println("PATIENT IS BUSY, SEARCH ANOTHER");
                             ACLMessage reply = message.createReply();
                             reply.setPerformative(ACLMessage.FAILURE);
                             send(reply);
@@ -352,10 +352,10 @@ public class PatientAgent extends Agent {
                     }
                     break;
                 case ACLMessage.AGREE:
-                    System.out.println("AGREE MESSAGE RECEIVED AT PATIENT");
+                    //System.out.println("AGREE MESSAGE RECEIVED AT PATIENT");
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE)) {
-                        visitCommonAgent();
                         setLastExam(message.getSender().getLocalName());
+                        visitCommonAgent();
                     }
                     break;
             }
