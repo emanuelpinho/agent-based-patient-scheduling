@@ -2,10 +2,7 @@ package hospital;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.ParallelBehaviour;
-import jade.core.behaviours.SequentialBehaviour;
-import jade.core.behaviours.SimpleBehaviour;
+import jade.core.behaviours.*;
 import jade.domain.AMSService;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
@@ -86,8 +83,7 @@ public class Treatment extends Agent {
         try {
             DFService.register(this, dfd);
             addBehaviour(new WaitForMessage(this));
-            WaitingListThread wl = new WaitingListThread();
-            wl.start();
+            addBehaviour(new WaitingListBehaviour(this, 1000));
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -109,7 +105,19 @@ public class Treatment extends Agent {
         patientSearch = true;
     }
 
-    private class WaitingListThread extends Thread{
+    private enum State {
+        LOOKING_FOR_PATIENTS,
+        LOOKING_FOR_MEDICS,
+        WAITING_FOR_MEDIC_APPROVAL,
+        START_TREATMENT,
+        FINISH_TREATMENT
+    }
+
+    private State state = State.LOOKING_FOR_PATIENTS;
+
+    private class WaitingListBehaviour extends TickerBehaviour {
+
+
 
         private void sendMessage(String type, String content, int performative, AID receiver){
             DFAgentDescription dfd = new DFAgentDescription();
@@ -137,88 +145,66 @@ public class Treatment extends Agent {
             }
         }
 
-        public void run() {
-            Random ran = new Random();
+        public WaitingListBehaviour(Agent a, long interval) {
+            super(a, interval);
+        }
 
-            while( 1==1 ) {
-                if (waitingList.size() > 0) {
-
+        protected void onTick() {
+            switch (state) {
+                case LOOKING_FOR_MEDICS:
+                    if (waitingList.size() == 0) {
+                        return;
+                    }
+                    System.out.println("Looking for medics for treatment");
                     sendMessage(Doctor.TYPE, Treatment.NEW_TREATMENT_MESSAGE, ACLMessage.REQUEST, null);
-
-                    try {
-                        Thread.sleep(ran.nextInt(1000));
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    doctorSearch = false;
-
+                    state = State.WAITING_FOR_MEDIC_APPROVAL;
+                    break;
+                case WAITING_FOR_MEDIC_APPROVAL:
                     if (doctorAID != null) {
-
+                        System.out.println("Looking for medic approval to start treatment");
                         sendMessage(Doctor.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, doctorAID);
-
-                        try {
-                            Thread.sleep(600);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        if(!doctorSearch) {
-
-                            setTimeOfTreatment(doctorPropose);
-
-                            for (AID p : waitingList)
-                                sendMessage(PatientAgent.TYPE, String.valueOf(timeOfTreatment), ACLMessage.REQUEST, p);
-
-                            try {
-                                Thread.sleep(500);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-
-                            if (patientAID != null) {
-
-                                patientSearch = false;
-                                sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
-
-                                try {
-                                    Thread.sleep(500);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-
-                                if (!patientSearch) {
-
-                                    busy = true;
-
-                                    System.out.println("Patient " + patientAID + " win bidding at " + getLocalName() + " and wait " + timeOfTreatment);
-                                    try {
-                                        Thread.sleep((long) timeOfTreatment);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                    sendMessage(PatientAgent.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, patientAID);
-                                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, doctorAID);
-                                    busy = false;
-                                } else
-                                    sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.INFORM, doctorAID);
-                            }
-                        }
-                        else{
-                            System.out.println("OK, i go to search another doctor");
-                        }
+                        state = State.LOOKING_FOR_PATIENTS;
+                    } else {
+                        System.out.println("Starting all over again");
+                        state = State.LOOKING_FOR_MEDICS;
                     }
-                }
+                    break;
+                case LOOKING_FOR_PATIENTS:
 
-                System.out.println("END OF CYCLE");
+                    System.out.println("Looking for patients for the treatment");
+                    setTimeOfTreatment(doctorPropose);
+                    for (AID p : waitingList) {
+                        sendMessage(PatientAgent.TYPE, String.valueOf(timeOfTreatment), ACLMessage.REQUEST, p);
+                    }
+                    state = State.START_TREATMENT;
 
-                resetValues();
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                    break;
+                case START_TREATMENT:
+                    if (patientAID == null) {
+                        System.out.println("Starting all over again");
+                        sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE + " - ", ACLMessage.INFORM, doctorAID);
+                        state = State.LOOKING_FOR_MEDICS;
+                        return;
+                    }
+                    System.out.println("Telling patient to begin treatment");
+                    patientSearch = false;
+                    sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
+                    break;
+                case FINISH_TREATMENT:
+                    if (!patientSearch) {
+                        System.out.println("Telling doctor and patient that treatment is over");
+                        sendMessage(PatientAgent.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, patientAID);
+                        sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.AGREE, doctorAID);
+                        waitingList.remove(patientAID);
+                    } else {
+                        System.out.println("Telling doctor that no patient was found");
+                        sendMessage(Doctor.TYPE, Treatment.FINISH_TREATMENT_MESSAGE, ACLMessage.INFORM, doctorAID);
+                    }
+                    state = State.LOOKING_FOR_MEDICS;
+                    break;
             }
+
+
         }
     }
 

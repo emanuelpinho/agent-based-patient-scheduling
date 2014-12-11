@@ -51,9 +51,10 @@ public class TestAgent extends Agent {
 
             AgentContainer c1 = getContainerController();
             AgentController d1;
-            d1 = c1.acceptNewAgent("doctor", new Doctor("doctor"));
+            d1 = c1.acceptNewAgent("doctor 1", new Doctor("doctor"));
             d1.start();
 
+            /*
             AgentContainer c2 = getContainerController();
             AgentController d2;
             d2 = c2.acceptNewAgent("doctor2", new Doctor("doctor2"));
@@ -63,11 +64,7 @@ public class TestAgent extends Agent {
             AgentController d3;
             d3 = c3.acceptNewAgent("doctor3", new Doctor("doctor3"));
             d3.start();
-
-
-
-
-
+            */
 
 
             AgentContainer ct1 = getContainerController();
@@ -75,6 +72,7 @@ public class TestAgent extends Agent {
             t1 = ct1.acceptNewAgent("analysis", new Treatment("analysis"));
             t1.start();
 
+            /*
             AgentContainer ct2 = getContainerController();
             AgentController t2;
             t2 = ct2.acceptNewAgent("endoscopy", new Treatment("endoscopy"));
@@ -99,10 +97,7 @@ public class TestAgent extends Agent {
             AgentController t6;
             t6 = ct6.acceptNewAgent("colonoscopy", new Treatment("colonoscopy"));
             t6.start();
-
-
-
-
+            */
 
 
             AgentContainer cp1 = getContainerController();
@@ -110,6 +105,7 @@ public class TestAgent extends Agent {
             p1 = cp1.acceptNewAgent("paciente", new PatientAgent(new String[] {"fever"}, "paciente"));
             p1.start();
 
+            /*
             AgentContainer cp2 = getContainerController();
             AgentController p2;
             p2 = cp2.acceptNewAgent("paciente2", new PatientAgent(new String[] {"mulligrubs"}, "paciente2"));
@@ -134,7 +130,7 @@ public class TestAgent extends Agent {
             AgentController p6;
             p6 = cp6.acceptNewAgent("paciente9", new PatientAgent(new String[] {"intestinal pain"}, "paciente9"));
             p6.start();
-
+            */
         }
         catch( Exception e ){
             System.out.println(e.getCause());

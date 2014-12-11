@@ -21,7 +21,7 @@ public class Doctor extends Agent {
     private HashMap<String, Experience> exp = new HashMap<String, Experience>();
 
 
-    private String name;
+    private String name = "";
 
     /**
      * Patient may be busy if performing some treatment.
@@ -42,16 +42,12 @@ public class Doctor extends Agent {
      * @param b Busy state
      */
     public void setBusy(boolean b) {
+        System.out.println("Setting Doctor " + name + " busy state: " + b);
         this.busy = b;
     }
 
     public double getExp(String treatment){
         return exp.get(treatment).getExp();
-    }
-
-    public Doctor(){
-        this.name = getLocalName();
-        constructor();
     }
 
     public Doctor(String name){
@@ -116,28 +112,28 @@ public class Doctor extends Agent {
         private void handleMessage (ACLMessage message) {
             String m = message.getContent();
             String s = message.getSender().getLocalName();
+            ACLMessage reply = message.createReply();
             switch (message.getPerformative()) {
                 case ACLMessage.REQUEST:
-                    if(!isBusy()) {
-                        //System.out.println("REQUEST MESSAGE RECEIVED AT DOCTOR");
-                        double exp = getExp(s) * 10;
-                        ACLMessage reply = message.createReply();
-                        reply.setPerformative(ACLMessage.SUBSCRIBE);
-                        reply.setContent(String.valueOf(exp));
-                        send(reply);
+                    if(isBusy()) {
+                        return;
                     }
+                    double exp = getExp(s) * 10;
+                    reply.setPerformative(ACLMessage.SUBSCRIBE);
+                    reply.setContent(String.valueOf(exp));
+                    send(reply);
+
                     break;
                 case ACLMessage.ACCEPT_PROPOSAL:
-                    //System.out.println("ACCEPT_PROPOSAL MESSAGE RECEIVED AT DOCTOR");
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
                         if(!isBusy()) {
-                            System.out.println("DOCTOR IS NOT BUSY");
+                            System.out.println("DOCTOR " + name + " IS NOT BUSY");
                             setBusy(true);
                             actualExam = s;
                         }
                         else {
-                            System.out.println("DOCTOR IS BUSY, SEARCH ANOTHER");
-                            ACLMessage reply = message.createReply();
+                            System.out.println("DOCTOR " + name + " IS BUSY, SEARCH ANOTHER");
+                            reply = message.createReply();
                             reply.setPerformative(ACLMessage.CANCEL);
                             send(reply);
                         }
