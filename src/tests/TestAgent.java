@@ -101,7 +101,7 @@ public class TestAgent extends Agent {
 
             AgentContainer cp1 = getContainerController();
             AgentController p1;
-            p1 = cp1.acceptNewAgent("paciente", new PatientAgent(new String[] {"fever"}, "paciente"));
+            p1 = cp1.acceptNewAgent("paciente", new PatientAgent(new String[] {"fever", "mulligrubs"}, "paciente"));
             p1.start();
 
 

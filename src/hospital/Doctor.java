@@ -151,6 +151,7 @@ public class Doctor extends Agent {
                     break;
                 case ACLMessage.INFORM:
                     //System.out.println("INFORM MESSAGE RECEIVED AT DOCTOR");
+                    System.out.println("actual exam: " + actualExam + " and exam of treatment: " + s);
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
                         setBusy(false);
                         actualExam = null;

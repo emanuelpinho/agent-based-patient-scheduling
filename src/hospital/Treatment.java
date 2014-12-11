@@ -77,10 +77,11 @@ public class Treatment extends Agent {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         dfd.addServices(sd);
+        Random rand = new Random();
         try {
             DFService.register(this, dfd);
             addBehaviour(new WaitForMessage(this));
-            addBehaviour(new WaitingListBehaviour(this, 1000));
+            addBehaviour(new WaitingListBehaviour(this, rand.nextInt((500) + 1) + 500)); // or only 500
         }
         catch (FIPAException fe) {
             fe.printStackTrace();
@@ -181,6 +182,7 @@ public class Treatment extends Agent {
                         //System.out.println("Telling patient to begin treatment");
                         sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
                         state = State.DISABLE_STATE;
+                        System.out.println("Begin treatment");
                         addBehaviour(new WakerBehaviour(Treatment.this, (long) timeOfTreatment) {
                             @Override
                             protected void onWake() {
