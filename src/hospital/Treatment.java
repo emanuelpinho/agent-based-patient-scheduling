@@ -269,6 +269,10 @@ public class Treatment extends Agent {
                     //System.out.println("FAILURE MESSAGE RECEIVED AT TREATMENT ");
                     state = State.LEAVE_DOCTOR;
                     break;
+                case ACLMessage.UNKNOWN:
+                    //System.out.println("FAILURE MESSAGE RECEIVED AT TREATMENT ");
+                    waitingList.remove(agent);
+                    break;
             }
         }
     }

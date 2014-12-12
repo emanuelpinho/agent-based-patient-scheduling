@@ -28,6 +28,7 @@ public class PatientAgent extends Agent {
     public static String NEW_UPDATE_MESSAGE = "UPDATE";
     public static String TRIAGE_MESSAGE = "TRIAGE";
     public static String REQUEST_TREATMENT = "REQUEST_TREATMENT";
+    public static String NEW_DEAD_MESSAGE = "NEW_DEAD_MESSAGE";
 
     /**
      * List of symptoms the patient has.
@@ -40,6 +41,8 @@ public class PatientAgent extends Agent {
      */
     private String name;
 
+
+    private boolean dead;
     /**
      * Last exam that patient did
      */
@@ -82,6 +85,7 @@ public class PatientAgent extends Agent {
 
         this.enterTime = System.currentTimeMillis();
         this.name = name;
+        this.dead = false;
 
         for(String s : symp){
             this.symptoms.add(new Symptom(s));
@@ -129,6 +133,10 @@ public class PatientAgent extends Agent {
     }
 
     public double calculateBid(double time){
+        if(healthState < 0){
+            System.out.println("The patient " + getLocalName() + " died");
+            dead = true;
+        }
         double res;
 
         res = ((1-initialState) * time) + (Math.pow(decreaseRate,2)/2);
@@ -176,7 +184,6 @@ public class PatientAgent extends Agent {
                 if (symptoms.size() == 0) {
                     long timeInHospital = System.currentTimeMillis() - enterTime;
                    System.out.println("Paciente com o nome: " + getLocalName() + " demorou " + timeInHospital + " a ser curado" );
-
                 }
                 return true;
             }
@@ -327,11 +334,19 @@ public class PatientAgent extends Agent {
                         double time = Double.parseDouble(m);
                         double bid = calculateBid(time);
                         //System.out.println("REQUEST MESSAGE RECEIVED AT PATIENT AND ANSWER WITH " + bid + " value");
-                        ACLMessage reply = message.createReply();
-                        reply.setPerformative(ACLMessage.PROPOSE);
-                        reply.setContent(String.valueOf(bid));
-                        send(reply);
 
+                        if(dead){
+                            ACLMessage reply = message.createReply();
+                            reply.setPerformative(ACLMessage.UNKNOWN);
+                            reply.setContent(PatientAgent.NEW_DEAD_MESSAGE);
+                            send(reply);
+                        }
+                        else {
+                            ACLMessage reply = message.createReply();
+                            reply.setPerformative(ACLMessage.PROPOSE);
+                            reply.setContent(String.valueOf(bid));
+                            send(reply);
+                        }
                     }
                     break;
                 case ACLMessage.ACCEPT_PROPOSAL:
