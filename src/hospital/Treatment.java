@@ -81,7 +81,7 @@ public class Treatment extends Agent {
         try {
             DFService.register(this, dfd);
             addBehaviour(new WaitForMessage(this));
-            addBehaviour(new WaitingListBehaviour(this, rand.nextInt((500) + 1) + 500)); // or only 500
+            addBehaviour(new WaitingListBehaviour(this, rand.nextInt(251) + 500)); // rand.nextInt((max - min) + 1) + min
         }
         catch (FIPAException fe) {
             fe.printStackTrace();

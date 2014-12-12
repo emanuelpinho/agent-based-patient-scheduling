@@ -128,10 +128,10 @@ public class Doctor extends Agent {
                 case ACLMessage.ACCEPT_PROPOSAL:
                     if (m.equals(Treatment.BEGIN_TREATMENT_MESSAGE)) {
                         if(!isBusy()) {
+                            actualExam = s;
                             //System.out.println("DOCTOR " + name + " IS NOT BUSY");
                             setBusy(true);
                             //System.out.println("DOCTOR IS NOW BUSY");
-                            actualExam = s;
                         }
                         else {
                             //System.out.println("DOCTOR " + name + " IS BUSY, SEARCH ANOTHER");

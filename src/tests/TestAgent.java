@@ -101,34 +101,46 @@ public class TestAgent extends Agent {
 
             AgentContainer cp1 = getContainerController();
             AgentController p1;
-            p1 = cp1.acceptNewAgent("paciente", new PatientAgent(new String[] {"fever", "mulligrubs"}, "paciente"));
+            p1 = cp1.acceptNewAgent("paciente", new PatientAgent(new String[] {"fever", "mulligrubs", "back pain"}, "paciente"));
             p1.start();
 
 
             AgentContainer cp2 = getContainerController();
             AgentController p2;
-            p2 = cp2.acceptNewAgent("paciente2", new PatientAgent(new String[] {"mulligrubs"}, "paciente2"));
+            p2 = cp2.acceptNewAgent("paciente2", new PatientAgent(new String[] {"mulligrubs", "heart palpitations", "intestinal pain"}, "paciente2"));
             p2.start();
 
             AgentContainer cp3 = getContainerController();
             AgentController p3;
-            p3 = cp3.acceptNewAgent("paciente3", new PatientAgent(new String[] {"back pain"}, "paciente3"));
+            p3 = cp3.acceptNewAgent("paciente3", new PatientAgent(new String[] {"back pain", "fever", "intestinal pain"}, "paciente3"));
             p3.start();
 
             AgentContainer cp4 = getContainerController();
             AgentController p4;
-            p4 = cp4.acceptNewAgent("paciente4", new PatientAgent(new String[] {"muscles aches"}, "paciente4"));
+            p4 = cp4.acceptNewAgent("paciente4", new PatientAgent(new String[] {"muscles aches", "back pain"}, "paciente4"));
             p4.start();
 
             AgentContainer cp5 = getContainerController();
             AgentController p5;
-            p5 = cp5.acceptNewAgent("paciente6", new PatientAgent(new String[] {"heart palpitations"}, "paciente6"));
+            p5 = cp5.acceptNewAgent("paciente6", new PatientAgent(new String[] {"heart palpitations", "fever"}, "paciente6"));
             p5.start();
 
             AgentContainer cp6 = getContainerController();
             AgentController p6;
-            p6 = cp6.acceptNewAgent("paciente9", new PatientAgent(new String[] {"intestinal pain"}, "paciente9"));
+            p6 = cp6.acceptNewAgent("paciente9", new PatientAgent(new String[] {"intestinal pain", "mulligrubs"}, "paciente9"));
             p6.start();
+
+
+
+
+            /*
+                    addPatient(new String[] {"fever", "mulligrubs", "back pain"}, "paciente");
+        addPatient(new String[] {"mulligrubs", "heart palpitations", "intestinal pain"}, "paciente2");
+        addPatient(new String[] {"back pain", "fever", "intestinal pain"}, "paciente3");
+        addPatient(new String[] {"muscles aches", "back pain"}, "paciente4");
+        addPatient(new String[] {"heart palpitations", "fever"}, "paciente6");
+        addPatient(new String[] {"intestinal pain", "mulligrubs"}, "paciente9");
+             */
 
         }
         catch( Exception e ){
