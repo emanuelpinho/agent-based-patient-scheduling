@@ -49,7 +49,8 @@ public class Patient {
 
     public void refreshHealthState(){
         Collections.sort(slots);
-        timeToCompletTreatment = slots.get(slots.size() - 1) * 3470;
+        timeToCompletTreatment = slots.get(slots.size() - 1) * 7825;
+        // this is 7 x 675 (delay of exchange of messages in our method + 2000( time for treatment ) + 1100 ( doctor experience )
         setHealthState();
 
         if(healthState < 0)
