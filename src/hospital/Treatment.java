@@ -182,12 +182,12 @@ public class Treatment extends Agent {
                         //System.out.println("Telling patient to begin treatment");
                         sendMessage(PatientAgent.TYPE, Treatment.BEGIN_TREATMENT_MESSAGE, ACLMessage.ACCEPT_PROPOSAL, patientAID);
                         state = State.DISABLE_STATE;
-                        System.out.println("Begin treatment");
+                        //System.out.println("Begin treatment");
                         addBehaviour(new WakerBehaviour(Treatment.this, (long) timeOfTreatment) {
                             @Override
                             protected void onWake() {
                                 super.onWake();
-                                System.out.println("Treatment: " + getLocalName() + " is over");
+                                //System.out.println("Treatment: " + getLocalName() + " is over");
                                 state = State.FINISH_TREATMENT;
                             }
                         });

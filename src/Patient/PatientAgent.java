@@ -168,7 +168,7 @@ public class PatientAgent extends Agent {
         this.initialState = s;
         long timeInHospital = System.currentTimeMillis() - enterTime; // retira um valor de decrease rate por cada 1440000 ms
 
-        this.healthState =  initialState-((decreaseRate/300000)*timeInHospital);
+        this.healthState =  initialState-((decreaseRate/10000)*timeInHospital);
 
         //System.out.println("The health state of " + getLocalName() + " is: " + this.healthState);
     }

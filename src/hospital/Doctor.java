@@ -146,15 +146,15 @@ public class Doctor extends Agent {
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
                         incrementExp(s);
                         setBusy(false);
-                        actualExam = null;
+                        actualExam = "";
                     }
                     break;
                 case ACLMessage.INFORM:
                     //System.out.println("INFORM MESSAGE RECEIVED AT DOCTOR");
-                    System.out.println("actual exam: " + actualExam + " and exam of treatment: " + s);
+                    //System.out.println("actual exam: " + actualExam + " and exam of treatment: " + s);
                     if (m.equals(Treatment.FINISH_TREATMENT_MESSAGE) && s.compareTo(actualExam) == 0) {
                         setBusy(false);
-                        actualExam = null;
+                        actualExam = "";
                     }
                     break;
             }
