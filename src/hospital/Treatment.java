@@ -241,7 +241,7 @@ public class Treatment extends Agent {
                 case ACLMessage.SUBSCRIBE:
                     //System.out.println("SUBSCRIBE MESSAGE RECEIVED AT TREATMENT");
                     m = Double.parseDouble(message.getContent());
-                    if (m > doctorPropose && !busy && state == State.WAITING_FOR_MEDIC_APPROVAL) {
+                    if (m < doctorPropose && !busy && state == State.WAITING_FOR_MEDIC_APPROVAL) {
                         doctorPropose = m;
                         doctorAID = agent;
                     }
