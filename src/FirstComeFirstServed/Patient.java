@@ -95,4 +95,8 @@ public class Patient {
 
         this.healthState = (float) (initialState-((decreaseRate/300000)*timeToCompletTreatment));
     }
+
+    public String getName() {
+        return name;
+    }
 }

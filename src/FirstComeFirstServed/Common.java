@@ -22,8 +22,8 @@ public class Common {
         doctors = new ArrayList<Doctor>();
     }
 
-    public void addDoctor(){
-         doctors.add(new Doctor());
+    public void addDoctor(String name){
+         doctors.add(new Doctor(name));
     }
 
     public void addTreatment(String t){
@@ -36,9 +36,9 @@ public class Common {
     }
 
     public void init(){
-        addDoctor();
-        addDoctor();
-        addDoctor();
+        addDoctor("doctor1");
+        addDoctor("doctor2");
+        addDoctor("doctor3");
 
         addTreatment("analysis");
         addTreatment("endoscopy");
@@ -47,12 +47,12 @@ public class Common {
         addTreatment("sonography");
         addTreatment("colonoscopy");
 
-        addPatient(new String[] {"fever", "mulligrubs"}, "paciente");
-        addPatient(new String[] {"mulligrubs"}, "paciente2");
-        addPatient(new String[] {"back pain"}, "paciente3");
-        addPatient(new String[] {"muscles aches"}, "paciente4");
-        addPatient(new String[] {"heart palpitations"}, "paciente6");
-        addPatient(new String[] {"intestinal pain"}, "paciente9");
+        addPatient(new String[] {"fever", "mulligrubs", "back pain"}, "paciente");
+        addPatient(new String[] {"mulligrubs", "heart palpitations", "intestinal pain"}, "paciente2");
+        addPatient(new String[] {"back pain", "fever", "intestinal pain"}, "paciente3");
+        addPatient(new String[] {"muscles aches", "back pain"}, "paciente4");
+        addPatient(new String[] {"heart palpitations", "fever"}, "paciente6");
+        addPatient(new String[] {"intestinal pain", "mulligrubs"}, "paciente9");
     }
 
     public void run(){
@@ -71,6 +71,7 @@ public class Common {
                     examSlot = t.getAvailableSlot(p.getSlots(), d.getLastSlot());
                     d.setLastSlot(examSlot);
                     p.addSlot(examSlot);
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -86,6 +87,7 @@ public class Common {
         for(int i = 1; i < doctors.size(); i++){
             if (doctors.get(i).getLastSlot() < slot){
                 d = doctors.get(i);
+                slot = doctors.get(i).getLastSlot();
             }
         }
 
