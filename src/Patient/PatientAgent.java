@@ -131,7 +131,7 @@ public class PatientAgent extends Agent {
     public double calculateBid(double time){
         double res;
 
-        res = (initialState * time) + (Math.pow(decreaseRate,2)/2);
+        res = ((1-initialState) * time) + (Math.pow(decreaseRate,2)/2);
 
         return res;
     }
@@ -149,10 +149,10 @@ public class PatientAgent extends Agent {
 
     public void setHealthState(){
 
-        float s = 0, b = 0;
+        float s = 1, b = 0;
 
         for(Symptom symptom : symptoms){
-            s += symptom.getHealth();
+            s -= symptom.getHealth();
             b += symptom.getDecreaseRate();
         }
 
