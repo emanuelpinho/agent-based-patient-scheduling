@@ -56,19 +56,24 @@ public class Common {
     }
 
     public void run(){
-        int slot;
+
         Patient p;
         Doctor d;
         Treatment t;
+        int examSlot;
 
         while(patients.size() > 0){
             p = patients.remove();
             d = findAvailableDoctor();
             for(String s : p.getSymptoms()){
-                t = treatments.get(s);
-                int examSlot = t.getAvailableSlot(p.getSlots(), d.getLastSlot());
-                d.setLastSlot(examSlot);
-                p.addSlot(examSlot);
+                try {
+                    t = getTreatment(s);
+                    examSlot = t.getAvailableSlot(p.getSlots(), d.getLastSlot());
+                    d.setLastSlot(examSlot);
+                    p.addSlot(examSlot);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             p.refreshHealthState();
         }
@@ -85,6 +90,29 @@ public class Common {
         }
 
         return d;
+    }
+
+    public Treatment getTreatment(String s) throws Exception {
+
+        if(s.compareTo("fever") == 0){
+            return treatments.get("analysis");
+        }
+        else if(s.compareTo("mulligrubs") == 0){
+            return treatments.get("endoscopy");
+        }
+        else if(s.compareTo("back pain") == 0){
+            return treatments.get("resonance");
+        }
+        else if(s.compareTo("muscles aches") == 0){
+            return treatments.get("sonography");
+        }
+        else if(s.compareTo("heart palpitations") == 0){
+            return treatments.get("electrocardiogram");
+        }
+        else if(s.compareTo("intestinal pain") == 0){
+            return treatments.get("colonoscopy");
+        }
+        else throw new Exception();
     }
 
 }

@@ -131,7 +131,7 @@ public class PatientAgent extends Agent {
     public double calculateBid(double time){
         double res;
 
-        res = (initialState * time) + (Math.pow(decreaseRate,2)/2);
+        res = ((1-initialState) * time) + (Math.pow(decreaseRate,2)/2);
 
         return res;
     }
@@ -149,10 +149,10 @@ public class PatientAgent extends Agent {
 
     public void setHealthState(){
 
-        float s = 0, b = 0;
+        float s = 1, b = 0;
 
         for(Symptom symptom : symptoms){
-            s += symptom.getHealth();
+            s -= symptom.getHealth();
             b += symptom.getDecreaseRate();
         }
 
@@ -161,6 +161,7 @@ public class PatientAgent extends Agent {
         long timeInHospital = System.currentTimeMillis() - enterTime; // retira um valor de decrease rate por cada 1440000 ms
 
         this.healthState =  initialState-((decreaseRate/300000)*timeInHospital);
+        System.out.println("Initial health state " + this.healthState);
 
         //System.out.println("The health state of " + getLocalName() + " is: " + this.healthState);
     }

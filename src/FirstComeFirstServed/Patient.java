@@ -1,5 +1,7 @@
 package FirstComeFirstServed;
 
+import symptons.Symptom;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -17,20 +19,19 @@ public class Patient {
     String name;
 
 
-    private float healthState, initialState, decreaseRate;
-
-    private long enterTime;
+    private float healthState;
 
     public Patient(String[] symp, String name) {
 
-        for (String s : symp) {
-            this.symptoms.add(s);
-        }
-        timeToCompletTreatment = 0;
-        this.name = name;
+        symptoms = new ArrayList<String>();
         slots = new ArrayList<Integer>();
         symptoms = new ArrayList<String>();
-        enterTime = System.currentTimeMillis();
+
+        Collections.addAll(symptoms, symp);
+
+        timeToCompletTreatment = 0;
+        this.name = name;
+
     }
 
     public ArrayList<String> getSymptoms(){
@@ -47,15 +48,14 @@ public class Patient {
     }
 
     public void refreshHealthState(){
+        Collections.sort(slots);
+        timeToCompletTreatment = slots.get(slots.size() - 1) * 3470;
         setHealthState();
-        long timeInHospital = System.currentTimeMillis() - enterTime;
 
-
-        if(healthState < 0){
+        if(healthState < 0)
             System.out.println("O paciente " + name + " morreu devido a excesso de tempo");
-        }
         else
-            System.out.println("O paciente " + name + " demorou " + timeInHospital + " a ser curado");
+            System.out.println("O paciente " + name + " demorou " + timeToCompletTreatment + " a ser curado");
 
     }
 
@@ -90,10 +90,9 @@ public class Patient {
             }
         }
 
-        this.decreaseRate = b;
-        this.initialState = s;
-        long timeInHospital = System.currentTimeMillis() - enterTime; // retira um valor de decrease rate por cada 1440000 ms
+        float decreaseRate = b;
+        float initialState = s;
 
-        this.healthState =  initialState-((decreaseRate/300000)*timeInHospital);
+        this.healthState = (float) (initialState-((decreaseRate/300000)*timeToCompletTreatment));
     }
 }

@@ -19,12 +19,20 @@ public class Treatment {
 
     public int getAvailableSlot(ArrayList<Integer> patientSlots, int doctorSlot){
 
+
+
         Collections.sort(slots);
         int ideal = doctorSlot + 1;
-        int maxTreatSlot = slots.get(slots.size() - 1);
-        int maxPatSlot = patientSlots.get(patientSlots.size() - 1);
-        boolean founded = false;
+        int maxTreatSlot = 0;
+        int maxPatSlot = 0;
 
+        if(slots.size() > 0)
+            slots.get(slots.size() - 1);
+
+        if(patientSlots.size() > 0)
+            maxPatSlot = patientSlots.get(patientSlots.size() - 1);
+
+        boolean founded = false;
         while(!founded){
             if(slots.contains(ideal) || patientSlots.contains(ideal)) {
                 if (ideal > maxTreatSlot && ideal > maxPatSlot) {
