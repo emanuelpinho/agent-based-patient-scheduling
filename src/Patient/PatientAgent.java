@@ -330,7 +330,8 @@ public class PatientAgent extends Agent {
                     }
                     break;
                 case ACLMessage.REQUEST:
-                    if(!isBusy() && symptoms.size() != 0) {
+
+                    if(!isBusy() && symptoms.size() != 0 && !dead) {
                         double time = Double.parseDouble(m);
                         double bid = calculateBid(time);
                         //System.out.println("REQUEST MESSAGE RECEIVED AT PATIENT AND ANSWER WITH " + bid + " value");
