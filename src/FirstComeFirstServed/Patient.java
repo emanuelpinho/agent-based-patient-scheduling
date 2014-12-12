@@ -54,7 +54,7 @@ public class Patient {
         setHealthState();
 
         if(healthState < 0)
-            System.out.println("O paciente " + name + " morreu devido a excesso de tempo");
+            System.out.println("O paciente " + name + " morreu devido a excesso de tempo (" + timeToCompletTreatment + ")");
         else
             System.out.println("O paciente " + name + " demorou " + timeToCompletTreatment + " a ser curado");
 
@@ -94,7 +94,7 @@ public class Patient {
         float decreaseRate = b;
         float initialState = s;
 
-        this.healthState = (float) (initialState-((decreaseRate/300000)*timeToCompletTreatment));
+        this.healthState = (float) (initialState-((decreaseRate/10000)*timeToCompletTreatment));
     }
 
     public String getName() {

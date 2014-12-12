@@ -47,12 +47,24 @@ public class Common {
         addTreatment("sonography");
         addTreatment("colonoscopy");
 
-        addPatient(new String[] {"fever", "mulligrubs", "back pain"}, "paciente");
-        addPatient(new String[] {"mulligrubs", "heart palpitations", "intestinal pain"}, "paciente2");
-        addPatient(new String[] {"back pain", "fever", "intestinal pain"}, "paciente3");
-        addPatient(new String[] {"muscles aches", "back pain"}, "paciente4");
-        addPatient(new String[] {"heart palpitations", "fever"}, "paciente6");
-        addPatient(new String[] {"intestinal pain", "mulligrubs"}, "paciente9");
+
+        addPatient(new String[] {"fever"}, "paciente");
+        addPatient(new String[] {"mulligrubs"}, "paciente2");
+        addPatient(new String[] {"back pain", "fever"}, "paciente3");
+        addPatient(new String[] {"back pain"}, "paciente4");
+        addPatient(new String[] {"heart palpitations"}, "paciente6");
+        addPatient(new String[] {"fever"}, "paciente9");
+        addPatient(new String[] {"intestinal pain", "heart palpitations"}, "paciente11");
+        addPatient(new String[] {"mulligrubs"}, "paciente12");
+        addPatient(new String[] {"mulligrubs", "back pain"}, "paciente13");
+        addPatient(new String[] {"fever", "back pain"}, "paciente14");
+        addPatient(new String[] {"fever"}, "paciente15");
+        addPatient(new String[] {"heart palpitations", "back pain"}, "paciente16");
+        addPatient(new String[] {"intestinal pain", "fever"}, "paciente17");
+        addPatient(new String[] {"intestinal pain", "mulligrubs"}, "paciente18");
+        addPatient(new String[] {"back pain"}, "paciente19");
+
+
     }
 
     public void run(){
@@ -63,6 +75,7 @@ public class Common {
         int examSlot;
 
         while(patients.size() > 0){
+
             p = patients.remove();
             d = findAvailableDoctor();
             for(String s : p.getSymptoms()){
