@@ -5,9 +5,7 @@ import symptons.Symptom;
 import java.util.ArrayList;
 import java.util.Collections;
 
-/**
- * Created by Emanuelpinho on 12/12/14.
- */
+
 public class Patient {
 
     private ArrayList<String> symptoms;

@@ -1,13 +1,17 @@
 package FirstComeFirstServed;
 
-/**
- * Created by Emanuelpinho on 12/12/14.
- */
+
+import java.util.Scanner;
+
 public class FirstComeFirstServed {
 
     public static void main(String [] args)
     {
-        Common c = new Common();
+        Scanner scan = new Scanner(System.in);
+
+        System.out.println("Qual a opção de testes que pretende correr? (1, 2 ou 3)");
+        String option = scan.nextLine();
+        Common c = new Common(option);
 
         c.init();
         c.run();

@@ -3,9 +3,7 @@ package FirstComeFirstServed;
 import java.util.ArrayList;
 import java.util.Collections;
 
-/**
- * Created by Emanuelpinho on 12/12/14.
- */
+
 public class Treatment {
 
     private ArrayList<Integer> slots;

@@ -2,9 +2,7 @@ package FirstComeFirstServed;
 
 import java.util.ArrayList;
 
-/**
- * Created by Emanuelpinho on 12/12/14.
- */
+
 public class Doctor {
 
     private double timeOfWork;
