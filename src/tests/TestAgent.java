@@ -131,17 +131,6 @@ public class TestAgent extends Agent {
             p6.start();
 
 
-
-
-            /*
-                    addPatient(new String[] {"fever", "mulligrubs", "back pain"}, "paciente");
-        addPatient(new String[] {"mulligrubs", "heart palpitations", "intestinal pain"}, "paciente2");
-        addPatient(new String[] {"back pain", "fever", "intestinal pain"}, "paciente3");
-        addPatient(new String[] {"muscles aches", "back pain"}, "paciente4");
-        addPatient(new String[] {"heart palpitations", "fever"}, "paciente6");
-        addPatient(new String[] {"intestinal pain", "mulligrubs"}, "paciente9");
-             */
-
         }
         catch( Exception e ){
             System.out.println(e.getCause());
