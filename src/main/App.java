@@ -2,6 +2,8 @@ package main;
 
 import jade.Boot;
 
+import java.util.Scanner;
+
 
 public class App {
 
